@@ -2,6 +2,11 @@
 
 ./splash
 
+ADDRESS='0.0.0.0'
+PORT='1337'
+
+VERSION='0.2'
+
 # BLACK='\033[0;30m'
 # RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -22,9 +27,9 @@ stty -echoctl
 
 
 echo -e "shiba is listening"
-echo -e "  --> ${YELLOW}address${NC}: 127.0.0.1"
-echo -e "  --> ${YELLOW}port${NC}: 8000"
-echo -e "  --> ${YELLOW}ident${NC}: shiba/0.2"
+echo -e "  --> ${YELLOW}address${NC}: ${ADDRESS}"
+echo -e "  --> ${YELLOW}port${NC}: ${PORT}"
+echo -e "  --> ${YELLOW}ident${NC}: shiba/${VERSION}"
 echo -e "  --> ${YELLOW}keep-alive${NC}: 5s"
 echo -e "  --> ${YELLOW}tls${NC}: disabled"
 echo -e "  --> ${YELLOW}base directory${NC}: ."
@@ -34,6 +39,11 @@ echo -e "  >=> ${GREEN}GET${NC} ${BLUE}/${NC}"
 echo -e "        ${CYAN}λ${NC} index"
 echo -e "  >=> ${GREEN}PUT${NC} ${BLUE}/resource/<id>${NC}"
 echo -e "        ${CYAN}λ${NC} something"
+
+# Σ - static directory
+# σ - static file
+# λ - function
+# δ - rest resource
 
 while true
 do
