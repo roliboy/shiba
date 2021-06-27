@@ -1,163 +1,147 @@
 #!/usr/bin/env bash
 
 recv() {
-   echo "< $*" >>/tmp/log
+    echo "< $*" >>/tmp/log
 }
 
 send() {
-   echo "> $*" >>/tmp/log
-   printf '%s\r\n' "$*"
+    echo "> $*" >>/tmp/log
+    printf '%s\r\n' "$*"
 }
 
 trim() {
-   local var="$*"
-   var="${var#"${var%%[![:space:]]*}"}"
-   var="${var%"${var##*[![:space:]]}"}"
-   echo -n "$var"
+    local var="$*"
+    var="${var#"${var%%[![:space:]]*}"}"
+    var="${var%"${var##*[![:space:]]}"}"
+    echo -n "$var"
 }
 
 
 fail() {
-   echo "$1"
-   exit 1
+    echo "$1"
+    exit 1
 }
 
 
 DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
 declare -a RESPONSE_HEADERS=(
-   "Date: $DATE"
-   "Expires: $DATE"
-   "Server: shiba"
-   "Access-Control-Allow-Origin: *"
-   "Access-Control-Allow-Methods: OPTIONS, GET, POST, PUT, DELETE"
-   "Access-Control-Allow-Headers: *"
+    "Date: $DATE"
+    "Expires: $DATE"
+    "Server: shiba"
+    "Access-Control-Allow-Origin: *"
+    "Access-Control-Allow-Methods: OPTIONS, GET, POST, PUT, DELETE"
+    "Access-Control-Allow-Headers: *"
 )
 
 handle_resource_list() {
-   RESPONSE_HEADERS+=("Content-Length: $(($(stat --printf='%s' resource) + 0))")
-   RESPONSE_HEADERS+=("Content-Type: application/json")
-   
-   send "HTTP/1.0 200 OK"
-   for i in "${RESPONSE_HEADERS[@]}"; do
-      send "$i"
-   done
-   send
+    resource_file="$1"
+    RESPONSE_HEADERS+=("Content-Length: $(stat --printf='%s' "$resource_file")")
+    RESPONSE_HEADERS+=("Content-Type: application/json")
 
-   send "$(cat resource)"
+    send "HTTP/1.0 200 OK"
+    for i in "${RESPONSE_HEADERS[@]}"; do
+        send "$i"
+    done
+    send
+
+    send "$(cat "$resource_file")"
 }
 
 handle_resource_retrieve() {
-   regex="^/resource/([^/]*)/?$"
+    resource_file="$1"
+    resource_id="$2"
 
-   if [[ $REQUEST_URI =~ $regex ]]; then
-      recv "REGEX: ${BASH_REMATCH[*]}"
-      id="${BASH_REMATCH[1]}"
-   else
-      exit 69
-   fi
+    data="$(cat "$resource_file")"
+    element="$(jq -c ".[] | select(.id == $resource_id)" <<< "$data")"
 
-   data="$(cat resource)"
-   element="$(jq -c ".[] | select(.id == $id)" <<< "$data")"
+    RESPONSE_HEADERS+=("Content-Length: ${#element}")
+    RESPONSE_HEADERS+=("Content-Type: application/json")
+    
+    send "HTTP/1.0 200 OK"
+    for i in "${RESPONSE_HEADERS[@]}"; do
+        send "$i"
+    done
+    send
 
-   RESPONSE_HEADERS+=("Content-Length: ${#element}")
-   RESPONSE_HEADERS+=("Content-Type: application/json")
-   
-   send "HTTP/1.0 200 OK"
-   for i in "${RESPONSE_HEADERS[@]}"; do
-      send "$i"
-   done
-   send
-
-   send "$element"
+    send "$element"
 }
 
 handle_resource_create() {
-   CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
+    resource_file="$1"
+ 
+    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
 
-   read -rn "$CONTENT_LENGTH" body
-   body=${body%%$'\r'}
-   recv "BODY: $body"
+    read -rn "$CONTENT_LENGTH" body
+    body=${body%%$'\r'}
+    recv "BODY: $body"
 
-   data="$(cat resource)"
-   id="$(($(jq '.[-1].id' <<< "$data") + 1))"
-   element="$(jq -c ". + {id: $id}" <<< "$body")"
-   data="$(jq -c ". + [$element]" <<< "$data")"
+    data="$(cat "$resource_file")"
+    id="$(($(jq '.[-1].id' <<< "$data") + 1))"
+    element="$(jq -c ". + {id: $id}" <<< "$body")"
+    data="$(jq -c ". + [$element]" <<< "$data")"
 
-   echo "$data" > resource
-   
-   RESPONSE_HEADERS+=("Content-Length: ${#element}")
-   RESPONSE_HEADERS+=("Content-Type: application/json")
-   send "HTTP/1.0 201 CREATED"
-   for i in "${RESPONSE_HEADERS[@]}"; do
-      send "$i"
-   done
-   send
+    echo "$data" > "$resource_file"
+    
+    RESPONSE_HEADERS+=("Content-Length: ${#element}")
+    RESPONSE_HEADERS+=("Content-Type: application/json")
+    send "HTTP/1.0 201 CREATED"
+    for i in "${RESPONSE_HEADERS[@]}"; do
+        send "$i"
+    done
+    send
 
-   send "$element"
+    send "$element"
 }
 
 handle_resource_update() {
-   # path="/resource/<id>"
-   regex="^/resource/([^/]*)/?$"
+    resource_file="$1"
+    resource_id="$2"
 
-   if [[ $REQUEST_URI =~ $regex ]]; then
-      recv "REGEX: ${BASH_REMATCH[*]}"
-      id="${BASH_REMATCH[1]}"
-   else
-      exit 69
-   fi
+    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
 
-   CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
+    read -rn "$CONTENT_LENGTH" body
+    body=${body%%$'\r'}
+    recv "BODY: $body"
 
-   read -rn "$CONTENT_LENGTH" body
-   body=${body%%$'\r'}
-   recv "BODY: $body"
+    data="$(cat "$resource_file")"
+    element="$(jq -c ". + {id: $resource_id}" <<< "$body")"
+    data="$(jq -c "[ .[] | select(.id == $resource_id) = $element ]" <<< "$data")"
 
-   data="$(cat resource)"
-   element="$(jq -c ". + {id: $id}" <<< "$body")"
-   data="$(jq -c "[ .[] | select(.id == $id) = $element ]" <<< "$data")"
+    echo "$data" > "$resource_file"
 
-   echo "$data" > resource
+    RESPONSE_HEADERS+=("Content-Length: ${#element}")
+    RESPONSE_HEADERS+=("Content-Type: application/json")
+    
+    send "HTTP/1.0 200 OK"
+    for i in "${RESPONSE_HEADERS[@]}"; do
+        send "$i"
+    done
+    send
 
-   RESPONSE_HEADERS+=("Content-Length: ${#element}")
-   RESPONSE_HEADERS+=("Content-Type: application/json")
-   
-   send "HTTP/1.0 200 OK"
-   for i in "${RESPONSE_HEADERS[@]}"; do
-      send "$i"
-   done
-   send
-
-   send "$element"
+    send "$element"
 }
 
 
 handle_resource_destroy() {
-   regex="^/resource/([^/]*)/?$"
+    resource_file="$1"
+    resource_id="$2"
 
-   if [[ $REQUEST_URI =~ $regex ]]; then
-      recv "REGEX: ${BASH_REMATCH[*]}"
-      id="${BASH_REMATCH[1]}"
-   else
-      exit 69
-   fi
+    data="$(cat "$resource_file")"
+    element="$(jq -c ".[] | select(.id == $resource_id)" <<< "$data")"
+    data="$(jq -c "map(select(.id != $resource_id))" <<< "$data")"
 
-   data="$(cat resource)"
-   element="$(jq -c ".[] | select(.id == $id)" <<< "$data")"
-   data="$(jq -c "map(select(.id != $id))" <<< "$data")"
+    echo "$data" > "$resource_file"
 
-   echo "$data" > resource
+    RESPONSE_HEADERS+=("Content-Length: ${#element}")
+    RESPONSE_HEADERS+=("Content-Type: application/json")
+    
+    send "HTTP/1.0 200 OK"
+    for i in "${RESPONSE_HEADERS[@]}"; do
+        send "$i"
+    done
+    send
 
-   RESPONSE_HEADERS+=("Content-Length: ${#element}")
-   RESPONSE_HEADERS+=("Content-Type: application/json")
-   
-   send "HTTP/1.0 200 OK"
-   for i in "${RESPONSE_HEADERS[@]}"; do
-      send "$i"
-   done
-   send
-
-   send "$element"
+    send "$element"
 }
 
 
@@ -169,18 +153,18 @@ recv "$line"
 read -r REQUEST_METHOD REQUEST_URI REQUEST_HTTP_VERSION <<< "$line"
 declare -A REQUEST_HEADERS
 while read -r line; do
-   line=${line%%$'\r'}
-   recv "$line"
-   [ -z "$line" ] && break
-   IFS=':' read -ra content <<< "$line"
-   header="${content[0]}"
-   value="$(trim "${content[1]}")"
-   REQUEST_HEADERS[$header]="$value"
+    line=${line%%$'\r'}
+    recv "$line"
+    [ -z "$line" ] && break
+    IFS=':' read -ra content <<< "$line"
+    header="${content[0]}"
+    value="$(trim "${content[1]}")"
+    REQUEST_HEADERS[$header]="$value"
 done
 
 
 for key in "${!REQUEST_HEADERS[@]}";
-   do recv "HEADER $key => ${REQUEST_HEADERS[$key]}";
+    do recv "HEADER $key => ${REQUEST_HEADERS[$key]}";
 done
 
 
@@ -190,13 +174,62 @@ done
 
 
 
+IFS='|'; endpoints=($SHIBA_RESOURCE_ENDPOINTS); unset IFS
+IFS='|'; files=($SHIBA_RESOURCE_FILES); unset IFS
+
+
+recv "ENDPOINTS: ${endpoints[*]}"
+recv "FILES: ${files[*]}"
+
+# TODO: something
 if [[ $REQUEST_METHOD == "GET" ]]; then
-   # handle_resource_retrieve
-   handle_resource_list
+    for i in "${!endpoints[@]}"; do 
+        endpoint="${endpoints[i]}"
+        resource_file="${files[i]}"
+
+        regex="^${endpoint}/?$"
+        detail_regex="^${endpoint}/([^/]+)/?$"
+
+        if [[ $REQUEST_URI =~ $detail_regex ]]; then
+            id="${BASH_REMATCH[1]}"
+            handle_resource_retrieve "$resource_file" "$id"
+        elif [[ $REQUEST_URI =~ $regex ]]; then
+            handle_resource_list "$resource_file"
+        fi
+    done
 elif [[ $REQUEST_METHOD == "POST" ]]; then
-   handle_resource_create
+    for i in "${!endpoints[@]}"; do 
+        endpoint="${endpoints[i]}"
+        resource_file="${files[i]}"
+
+        regex="^${endpoint}/?$"
+
+        if [[ $REQUEST_URI =~ $regex ]]; then
+            handle_resource_create "$resource_file"
+        fi
+    done
 elif [[ $REQUEST_METHOD == "PUT" ]]; then
-   handle_resource_update
+    for i in "${!endpoints[@]}"; do 
+        endpoint="${endpoints[i]}"
+        resource_file="${files[i]}"
+
+        detail_regex="^${endpoint}/([^/]+)/?$"
+
+        if [[ $REQUEST_URI =~ $detail_regex ]]; then
+            id="${BASH_REMATCH[1]}"
+            handle_resource_update "$resource_file" "$id"
+        fi
+    done
 elif [[ $REQUEST_METHOD == "DELETE" ]]; then
-   handle_resource_destroy
+    for i in "${!endpoints[@]}"; do 
+        endpoint="${endpoints[i]}"
+        resource_file="${files[i]}"
+
+        detail_regex="^${endpoint}/([^/]+)/?$"
+
+        if [[ $REQUEST_URI =~ $detail_regex ]]; then
+            id="${BASH_REMATCH[1]}"
+            handle_resource_destroy "$resource_file" "$id"
+        fi
+    done
 fi

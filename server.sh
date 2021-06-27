@@ -183,8 +183,10 @@ for i in "${!FUNCTION_ENDPOINTS[@]}"; do
     echo -e "        ${CYAN}λ${NC} $file"
 done
 
-export RESOURCE_ENDPOINTS
-export RESOURCE_FILES
+SHIBA_RESOURCE_ENDPOINTS=$(IFS='|'; echo "${RESOURCE_ENDPOINTS[*]}")
+export SHIBA_RESOURCE_ENDPOINTS
+SHIBA_RESOURCE_FILES=$(IFS='|'; echo "${RESOURCE_FILES[*]}")
+export SHIBA_RESOURCE_FILES
 
 while true
 do
