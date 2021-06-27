@@ -50,6 +50,31 @@ handle_resource_list() {
    send "$(cat resource)"
 }
 
+handle_resource_retrieve() {
+   regex="^/resource/([^/]*)/?$"
+
+   if [[ $REQUEST_URI =~ $regex ]]; then
+      recv "REGEX: ${BASH_REMATCH[*]}"
+      id="${BASH_REMATCH[1]}"
+   else
+      exit 69
+   fi
+
+   data="$(cat resource)"
+   element="$(jq -c ".[] | select(.id == $id)" <<< "$data")"
+
+   RESPONSE_HEADERS+=("Content-Length: ${#element}")
+   RESPONSE_HEADERS+=("Content-Type: application/json")
+   
+   send "HTTP/1.0 200 OK"
+   for i in "${RESPONSE_HEADERS[@]}"; do
+      send "$i"
+   done
+   send
+
+   send "$element"
+}
+
 handle_resource_create() {
    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
 
@@ -76,8 +101,6 @@ handle_resource_create() {
 }
 
 handle_resource_update() {
-   recv "$REQUEST_URI"
-
    # path="/resource/<id>"
    regex="^/resource/([^/]*)/?$"
 
@@ -97,6 +120,35 @@ handle_resource_update() {
    data="$(cat resource)"
    element="$(jq -c ". + {id: $id}" <<< "$body")"
    data="$(jq -c "[ .[] | select(.id == $id) = $element ]" <<< "$data")"
+
+   echo "$data" > resource
+
+   RESPONSE_HEADERS+=("Content-Length: ${#element}")
+   RESPONSE_HEADERS+=("Content-Type: application/json")
+   
+   send "HTTP/1.0 200 OK"
+   for i in "${RESPONSE_HEADERS[@]}"; do
+      send "$i"
+   done
+   send
+
+   send "$element"
+}
+
+
+handle_resource_destroy() {
+   regex="^/resource/([^/]*)/?$"
+
+   if [[ $REQUEST_URI =~ $regex ]]; then
+      recv "REGEX: ${BASH_REMATCH[*]}"
+      id="${BASH_REMATCH[1]}"
+   else
+      exit 69
+   fi
+
+   data="$(cat resource)"
+   element="$(jq -c ".[] | select(.id == $id)" <<< "$data")"
+   data="$(jq -c "map(select(.id != $id))" <<< "$data")"
 
    echo "$data" > resource
 
@@ -142,13 +194,13 @@ done
 
 
 
-# handle_resource_destroy
-# handle_resource_retrieve
-
 if [[ $REQUEST_METHOD == "GET" ]]; then
-   handle_resource_list
+   handle_resource_retrieve
+   # handle_resource_list
 elif [[ $REQUEST_METHOD == "POST" ]]; then
    handle_resource_create
 elif [[ $REQUEST_METHOD == "PUT" ]]; then
    handle_resource_update
+elif [[ $REQUEST_METHOD == "DELETE" ]]; then
+   handle_resource_destroy
 fi
