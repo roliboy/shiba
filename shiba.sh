@@ -1,23 +1,19 @@
 #!/usr/bin/env bash
 
-warn() {
-    echo "WARNING: $*" >>/tmp/log
-}
-
 recv() {
-    echo "< $*" >>/tmp/log
+   echo "< $*" >>/tmp/log
 }
 
 send() {
-    echo "> $*" >>/tmp/log
-    printf '%s\r\n' "$*"
+   echo "> $*" >>/tmp/log
+   printf '%s\r\n' "$*"
 }
 
 trim() {
-    local var="$*"
-    var="${var#"${var%%[![:space:]]*}"}"
-    var="${var%"${var##*[![:space:]]}"}"
-    echo -n "$var"
+   local var="$*"
+   var="${var#"${var%%[![:space:]]*}"}"
+   var="${var%"${var##*[![:space:]]}"}"
+   echo -n "$var"
 }
 
 
@@ -195,8 +191,8 @@ done
 
 
 if [[ $REQUEST_METHOD == "GET" ]]; then
-   handle_resource_retrieve
-   # handle_resource_list
+   # handle_resource_retrieve
+   handle_resource_list
 elif [[ $REQUEST_METHOD == "POST" ]]; then
    handle_resource_create
 elif [[ $REQUEST_METHOD == "PUT" ]]; then
