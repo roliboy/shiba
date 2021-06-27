@@ -39,14 +39,15 @@ help() {
     # TODO: rewrite these
     # TODO: prepopulate
     echo -e "${BLUE}routes:${NC}"
-    echo -e "    ${CYAN}resource${NC} ${GREEN}<endpoint>${NC} ${GREEN}<file?>${NC}"
+    echo -e "    ${CYAN}resource${NC} ${GREEN}<endpoint>${NC} ${GREEN}<file>${NC}"
     echo -e "        create a REST resource exposed at the given endpoint"
-    echo -e "        optionally can use existing data in the provided file"
-    echo -e "        ${GREEN}GET${NC} ${BLUE}/path${NC}: list all entities"
-    echo -e "        ${GREEN}POST${NC} ${BLUE}/path${NC}: create and return a new entity"
-    echo -e "        ${GREEN}GET${NC} ${BLUE}/path/<id>${NC}: retrieve the entity with the given id"
-    echo -e "        ${GREEN}PUT${NC} ${BLUE}/path/<id>${NC}: update the entity with the given id"
-    echo -e "        ${GREEN}DELETE${NC} ${BLUE}/path/<id>${NC}: delete entity with the given id"
+    echo -e "        storing the data in the provided file"
+    echo -e "        ${YELLOW}example${NC}: ${CYAN}resource${NC} ${GREEN}/documents${NC} ${GREEN}documents.json${NC}"
+    echo -e "            ${GREEN}GET${NC} ${BLUE}/documents${NC}: list all documents"
+    echo -e "            ${GREEN}POST${NC} ${BLUE}/documents${NC}: create a new document and return it"
+    echo -e "            ${GREEN}GET${NC} ${BLUE}/documents/<id>${NC}: retrieve the document with the given id"
+    echo -e "            ${GREEN}PUT${NC} ${BLUE}/documents/<id>${NC}: update the document with the given id"
+    echo -e "            ${GREEN}DELETE${NC} ${BLUE}/documents/<id>${NC}: delete document with the given id"
     echo -e "        ${MAGENTA}note${NC}: paths can include an optional trailing slash"
     # TODO: content type override
     echo -e "    ${CYAN}static${NC} ${GREEN}<endpoint>${NC} ${GREEN}<file>${NC}"
@@ -71,6 +72,14 @@ help() {
     echo -e "        forward all requests from this endpoint to another server/endpoint"
 }
 
+STATIC_ENDPOINTS=()
+STATIC_FILES=()
+STATIC_DIRECTORY_ENDPOINTS=()
+STATIC_DIRECTORIES=()
+RESOURCE_ENDPOINTS=()
+RESOURCE_FILES=()
+FUNCTION_ENDPOINTS=()
+FUNCTION_FILES=()
 
 while [ "$#" -gt 0 ]; do
 case "$1" in
@@ -88,9 +97,34 @@ case "$1" in
         PORT="$2"
         shift 2
         ;;
+    static)
+        endpoint="$2"
+        file="$3"
+        STATIC_ENDPOINTS+=("$endpoint")
+        STATIC_FILES+=("$file")
+        shift 3
+        ;;
+    # TODO: replace this
+    directory)
+        endpoint="$2"
+        directory="$3"
+        STATIC_DIRECTORY_ENDPOINTS+=("$endpoint")
+        STATIC_DIRECTORIES+=("$directory")
+        shift 3
+        ;;
     resource)
         endpoint="$2"
-        shift 2
+        file="$3"
+        RESOURCE_ENDPOINTS+=("$endpoint")
+        RESOURCE_FILES+=("$file")
+        shift 3
+        ;;
+    function)
+        endpoint="$2"
+        file="$3"
+        FUNCTION_ENDPOINTS+=("$endpoint")
+        FUNCTION_FILES+=("$file")
+        shift 3
         ;;
     *)
         echo "unknown flag/option: '$1'"
@@ -122,15 +156,35 @@ echo -e "  --> ${YELLOW}tls${NC}: disabled"
 echo -e "  --> ${YELLOW}base directory${NC}: ."
 echo -e "  --> ${YELLOW}log level${NC}: normal"
 echo -e "routes:"
-echo -e "  >=> ${GREEN}GET${NC} ${BLUE}/${NC}"
-echo -e "        ${CYAN}λ${NC} index"
-echo -e "  >=> ${GREEN}PUT${NC} ${BLUE}/resource/<id>${NC}"
-echo -e "        ${CYAN}λ${NC} something"
+for i in "${!STATIC_ENDPOINTS[@]}"; do 
+    endpoint="${STATIC_ENDPOINTS[i]}"
+    file="${STATIC_FILES[i]}"
+    echo -e "  >=> ${GREEN}GET${NC} ${BLUE}${endpoint}${NC}"
+    echo -e "        ${CYAN}σ${NC} $file"
+done
+for i in "${!STATIC_DIRECTORY_ENDPOINTS[@]}"; do 
+    endpoint="${STATIC_DIRECTORY_ENDPOINTS[i]}"
+    file="${STATIC_DIRECTORIES[i]}"
+    echo -e "  >=> ${GREEN}GET${NC} ${BLUE}${endpoint}${NC}"
+    echo -e "        ${CYAN}Σ${NC} $file"
+done
+for i in "${!RESOURCE_ENDPOINTS[@]}"; do 
+    endpoint="${RESOURCE_ENDPOINTS[i]}"
+    file="${RESOURCE_FILES[i]}"
+    echo -e "  >=> ${GREEN}GET/POST${NC} ${BLUE}${endpoint}${NC}"
+    echo -e "        ${CYAN}δ${NC} $file"
+    echo -e "  >=> ${GREEN}GET/PUT/DELETE${NC} ${BLUE}${endpoint}/<id>${NC}"
+    echo -e "        ${CYAN}δ${NC} $file"
+done
+for i in "${!FUNCTION_ENDPOINTS[@]}"; do 
+    endpoint="${FUNCTION_ENDPOINTS[i]}"
+    file="${FUNCTION_FILES[i]}"
+    echo -e "  >=> ${GREEN}GET/POST${NC} ${BLUE}${endpoint}${NC}"
+    echo -e "        ${CYAN}λ${NC} $file"
+done
 
-# Σ - static directory
-# σ - static file
-# λ - function
-# δ - rest resource
+export RESOURCE_ENDPOINTS
+export RESOURCE_FILES
 
 while true
 do
