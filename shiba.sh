@@ -35,7 +35,6 @@ declare -a RESPONSE_HEADERS=(
    "Access-Control-Allow-Origin: *"
    "Access-Control-Allow-Methods: OPTIONS, GET, POST, PUT, DELETE"
    "Access-Control-Allow-Headers: *"
-   # "Access-Control-Allow-Credentials: true"
 )
 
 handle_resource_list() {
@@ -52,7 +51,6 @@ handle_resource_list() {
 }
 
 handle_resource_create() {
-
    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
 
    read -rn "$CONTENT_LENGTH" body
@@ -77,6 +75,43 @@ handle_resource_create() {
    send "$element"
 }
 
+handle_resource_update() {
+   recv "$REQUEST_URI"
+
+   # path="/resource/<id>"
+   regex="^/resource/([^/]*)/?$"
+
+   if [[ $REQUEST_URI =~ $regex ]]; then
+      recv "REGEX: ${BASH_REMATCH[*]}"
+      id="${BASH_REMATCH[1]}"
+   else
+      exit 69
+   fi
+
+   CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
+
+   read -rn "$CONTENT_LENGTH" body
+   body=${body%%$'\r'}
+   recv "BODY: $body"
+
+   data="$(cat resource)"
+   element="$(jq -c ". + {id: $id}" <<< "$body")"
+   data="$(jq -c "[ .[] | select(.id == $id) = $element ]" <<< "$data")"
+
+   echo "$data" > resource
+
+   RESPONSE_HEADERS+=("Content-Length: ${#element}")
+   RESPONSE_HEADERS+=("Content-Type: application/json")
+   
+   send "HTTP/1.0 200 OK"
+   for i in "${RESPONSE_HEADERS[@]}"; do
+      send "$i"
+   done
+   send
+
+   send "$element"
+}
+
 
 
 read -r line || fail 400
@@ -93,9 +128,6 @@ while read -r line; do
    header="${content[0]}"
    value="$(trim "${content[1]}")"
    REQUEST_HEADERS[$header]="$value"
-   # if [[ $line =~ ^Content-Length: ]]; then
-   #    CONTENT_LENGTH=$(cut -d':' -f2 <<< "$line")
-   # fi
 done
 
 
@@ -108,9 +140,15 @@ done
 [ -n "$REQUEST_URI" ] || fail 400
 [ -n "$REQUEST_HTTP_VERSION" ] || fail 400
 
-handle_resource_list
-# handle_resource_create
 
-# [ "$REQUEST_METHOD" = "GET" ] || fail 405
-# [ "$REQUEST_URI" = "/resource" ] && handle_resource_list
 
+# handle_resource_destroy
+# handle_resource_retrieve
+
+if [[ $REQUEST_METHOD == "GET" ]]; then
+   handle_resource_list
+elif [[ $REQUEST_METHOD == "POST" ]]; then
+   handle_resource_create
+elif [[ $REQUEST_METHOD == "PUT" ]]; then
+   handle_resource_update
+fi
