@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+help() {
+    echo -e "${YELLOW}shiba${NC} - the good boie rest api"
+    echo -e "    ${GREEN}version ${VERSION}${NC}"
+
+    echo -e "${BLUE}usage:${NC}"
+    echo -e "    $0 [flags/options] [routes]"
+    echo -e "${BLUE}flags:${NC}"
+    echo -e "    ${GREEN}-h${NC}, ${GREEN}--help${NC}"
+    echo -e "        print this help menu"
+    echo -e "${BLUE}options:${NC}"
+    echo -e "    ${GREEN}-b${NC}, ${GREEN}--bind <address>${NC}"
+    echo -e "        specify alternate bind address"
+    echo -e "        ${MAGENTA}default${NC}: 0.0.0.0 (all interfaces)"
+    echo -e "    ${GREEN}-p${NC}, ${GREEN}--port <port>${NC}"
+    echo -e "        specify alternate port"
+    echo -e "        ${MAGENTA}default${NC}: 8000"
+    echo -e "    ${GREEN}-c${NC}, ${GREEN}--config <config-file>${NC}"
+    echo -e "        load settings and routes from configuration file"
+    echo -e "        ${MAGENTA}default${NC}: none"
+    # TODO: rewrite these
+    # TODO: prepopulate
+    echo -e "${BLUE}routes:${NC}"
+    echo -e "    ${CYAN}resource${NC} ${GREEN}<endpoint>${NC} ${GREEN}<file>${NC}"
+    echo -e "        create a REST resource exposed at the given endpoint"
+    echo -e "        storing the data in the provided file"
+    echo -e "        ${YELLOW}example${NC}: ${CYAN}resource${NC} ${GREEN}/documents${NC} ${GREEN}documents.json${NC}"
+    echo -e "            ${GREEN}GET${NC} ${BLUE}/documents${NC}: list all documents"
+    echo -e "            ${GREEN}POST${NC} ${BLUE}/documents${NC}: create a new document and return it"
+    echo -e "            ${GREEN}GET${NC} ${BLUE}/documents/<id>${NC}: retrieve the document with the given id"
+    echo -e "            ${GREEN}PUT${NC} ${BLUE}/documents/<id>${NC}: update the document with the given id"
+    echo -e "            ${GREEN}DELETE${NC} ${BLUE}/documents/<id>${NC}: delete document with the given id"
+    echo -e "        ${MAGENTA}note${NC}: paths can include an optional trailing slash"
+    # TODO: content type override
+    echo -e "    ${CYAN}static${NC} ${GREEN}<endpoint>${NC} ${GREEN}<file>${NC}"
+    echo -e "        statically serve the given file at the specified endpoint"
+    echo -e "        ${YELLOW}example${NC}: ${CYAN}static${NC} ${GREEN}/${NC} ${GREEN}index.html${NC}"
+    echo -e "            will statically serve the 'index.html' file on /"
+    echo -e "        ${MAGENTA}note${NC}: automatically sets Content-Type header based on file type"
+    # 
+    echo -e "    ${CYAN}directory${NC} ${GREEN}<endpoint>${NC} ${GREEN}<directory>${NC}"
+    echo -e "        statically serve all files in the given directory at specified endpoint"
+    echo -e "        ${YELLOW}example${NC}: ${CYAN}directory${NC} ${GREEN}/static/${NC} ${GREEN}./media${NC}"
+    echo -e "            will statically all files in the 'media' directory on /static/"
+    echo -e "            suppose the 'media' directory contained a file 'logo.png'"
+    echo -e "            and a subdirectory 'profiles' containing a file named 'user.png'"
+    echo -e "            'logo.png' can be accessed at /static/logo.png"
+    echo -e "            'user.png' can be accessed at /static/profiles/user.png"
+    echo -e "        ${MAGENTA}note${NC}: Content-Type header is automatically set based on file type"
+    # 
+    echo -e "    ${CYAN}function${NC} ${RED}[WIP]${NC}"
+    echo -e "        run executable/script and return output"
+    echo -e "    ${CYAN}proxy${NC} ${RED}[WIP]${NC}"
+    echo -e "        forward all requests from this endpoint to another server/endpoint"
+}
