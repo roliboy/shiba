@@ -45,6 +45,11 @@ send() {
     echo -ne "$*\r\n"
 }
 
+send_file() {
+    log_sent_data "file $1"
+    cat "$1"
+}
+
 trim() {
     local var="$*"
     var="${var#"${var%%[![:space:]]*}"}"
@@ -68,6 +73,20 @@ declare -a RESPONSE_HEADERS=(
     "Access-Control-Allow-Methods: OPTIONS, GET, POST, PUT, DELETE"
     "Access-Control-Allow-Headers: *"
 )
+
+handle_static_file() {
+    file="$1"
+    RESPONSE_HEADERS+=("Content-Length: $(stat --printf='%s' "$file")")
+    RESPONSE_HEADERS+=("Content-Type: application/png")
+    
+    send "HTTP/1.0 200 OK"
+    for i in "${RESPONSE_HEADERS[@]}"; do
+        send "$i"
+    done
+    send
+
+    send_file "$file"
+}
 
 handle_resource_list() {
     resource_file="$1"
@@ -204,13 +223,14 @@ while line="$(recv)"; do
 done
 
 
-IFS='|' read -ra endpoints <<< "$SHIBA_RESOURCE_ENDPOINTS"
-IFS='|' read -ra files <<< "$SHIBA_RESOURCE_FILES"
+IFS='|' read -ra resource_endpoints <<< "$SHIBA_RESOURCE_ENDPOINTS"
+IFS='|' read -ra resource_files <<< "$SHIBA_RESOURCE_FILES"
+IFS='|' read -ra static_endpoints <<< "$SHIBA_STATIC_ENDPOINTS"
+IFS='|' read -ra static_files <<< "$SHIBA_STATIC_FILES"
 
-
-for i in "${!endpoints[@]}"; do
-    endpoint="${endpoints[i]}"
-    resource_file="${files[i]}"
+for i in "${!resource_endpoints[@]}"; do
+    endpoint="${resource_endpoints[i]}"
+    resource_file="${resource_files[i]}"
 
     regex="^${endpoint}/?$"
     detail_regex="^${endpoint}/([^/]+)/?$"
@@ -228,5 +248,15 @@ for i in "${!endpoints[@]}"; do
     elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
         id="${BASH_REMATCH[1]}"
         handle_resource_destroy "$resource_file" "$id"
+    fi
+done
+
+for i in "${!static_endpoints[@]}"; do
+    endpoint="${static_endpoints[i]}"
+    static_file="${static_files[i]}"
+
+    regex="^${endpoint}$"
+    if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+        handle_static_file "$static_file"
     fi
 done

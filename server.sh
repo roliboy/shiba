@@ -1,19 +1,16 @@
 #!/bin/bash
 
-
 ADDRESS='0.0.0.0'
 PORT='1337'
 
 VERSION='0.2'
 
-# BLACK='\033[0;30m'
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
-# WHITE='\033[0;37m'
 NC='\033[0m'
 
 
@@ -153,7 +150,6 @@ echo -e "  --> ${YELLOW}port${NC}: ${PORT}"
 echo -e "  --> ${YELLOW}ident${NC}: shiba/${VERSION}"
 echo -e "  --> ${YELLOW}keep-alive${NC}: 5s"
 echo -e "  --> ${YELLOW}tls${NC}: disabled"
-echo -e "  --> ${YELLOW}base directory${NC}: ."
 echo -e "  --> ${YELLOW}log level${NC}: normal"
 echo -e "routes:"
 for i in "${!STATIC_ENDPOINTS[@]}"; do 
@@ -188,6 +184,10 @@ SHIBA_RESOURCE_ENDPOINTS=$(IFS='|'; echo "${RESOURCE_ENDPOINTS[*]}")
 export SHIBA_RESOURCE_ENDPOINTS
 SHIBA_RESOURCE_FILES=$(IFS='|'; echo "${RESOURCE_FILES[*]}")
 export SHIBA_RESOURCE_FILES
+SHIBA_STATIC_ENDPOINTS=$(IFS='|'; echo "${STATIC_ENDPOINTS[*]}")
+export SHIBA_STATIC_ENDPOINTS
+SHIBA_STATIC_FILES=$(IFS='|'; echo "${STATIC_FILES[*]}")
+export SHIBA_STATIC_FILES
 
 
 printlog() {
