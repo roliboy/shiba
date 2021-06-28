@@ -76,6 +76,7 @@ fail() {
 }
 export -f fail
 
+# TODO: 404 if file does not exist
 handle_static_file() {
     file="$1"
     RESPONSE_HEADERS+=("Content-Length: $(stat --printf='%s' "$file")")
@@ -90,6 +91,26 @@ handle_static_file() {
     send_file "$file"
 }
 export -f handle_static_file
+
+# handle_static_directory() {
+#     directory="$1"
+#     resource="$2"
+
+#     RESPONSE_HEADERS+=("POG-Content-Directory: $directory")
+#     RESPONSE_HEADERS+=("POG-Content-Resource: $resource")
+
+#     RESPONSE_HEADERS+=("Content-Length: 3")
+#     RESPONSE_HEADERS+=("Content-Type: text/html")
+    
+#     send "HTTP/1.0 200 OK"
+#     for i in "${RESPONSE_HEADERS[@]}"; do
+#         send "$i"
+#     done
+#     send
+
+#     send "lel"
+# }
+# export -f handle_static_directory
 
 handle_resource_list() {
     resource_file="$1"
@@ -234,6 +255,8 @@ handle_client() {
     IFS='|' read -ra resource_files <<< "$SHIBA_RESOURCE_FILES"
     IFS='|' read -ra static_endpoints <<< "$SHIBA_STATIC_ENDPOINTS"
     IFS='|' read -ra static_files <<< "$SHIBA_STATIC_FILES"
+    IFS='|' read -ra static_directory_endpoints <<< "$SHIBA_STATIC_DIRECTORY_ENDPOINTS"
+    IFS='|' read -ra static_directories <<< "$SHIBA_STATIC_DIRECTORIES"
 
     DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
     declare -a RESPONSE_HEADERS=(
@@ -275,6 +298,18 @@ handle_client() {
         regex="^${endpoint}$"
         if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             handle_static_file "$static_file"
+        fi
+    done
+
+    # TODO: this block assumes endpoints have no trailing slashes
+    for i in "${!static_directory_endpoints[@]}"; do
+        endpoint="${static_directory_endpoints[i]}"
+        directory="${static_directories[i]}"
+
+        regex="^${endpoint}/(.*)$"
+        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            resource="${BASH_REMATCH[1]}"
+            handle_static_file "$directory/$resource"
         fi
     done
 }

@@ -27,7 +27,8 @@ done
 for i in "${!STATIC_DIRECTORY_ENDPOINTS[@]}"; do 
     endpoint="${STATIC_DIRECTORY_ENDPOINTS[i]}"
     file="${STATIC_DIRECTORIES[i]}"
-    echo -e "  >=> ${GREEN}GET${NC} ${BLUE}${endpoint}${NC}"
+    # TODO: decide what to do with trailing slashes
+    echo -e "  >=> ${GREEN}GET${NC} ${BLUE}${endpoint}/<file..>${NC}"
     echo -e "        ${CYAN}Σ${NC} $file"
 done
 for i in "${!RESOURCE_ENDPOINTS[@]}"; do 
