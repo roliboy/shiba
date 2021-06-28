@@ -182,17 +182,36 @@ for i in "${!FUNCTION_ENDPOINTS[@]}"; do
     echo -e "  >=> ${GREEN}GET/POST${NC} ${BLUE}${endpoint}${NC}"
     echo -e "        ${CYAN}λ${NC} $file"
 done
+echo -e ""
 
 SHIBA_RESOURCE_ENDPOINTS=$(IFS='|'; echo "${RESOURCE_ENDPOINTS[*]}")
 export SHIBA_RESOURCE_ENDPOINTS
 SHIBA_RESOURCE_FILES=$(IFS='|'; echo "${RESOURCE_FILES[*]}")
 export SHIBA_RESOURCE_FILES
 
-while true
-do
+
+printlog() {
+    while read -r line; do
+        event="$(cut -d' ' -f1 <<< "$line")"
+        value="$(cut -d' ' -f2- <<< "$line")"
+        case "$event" in
+            RECEIVED)
+                ;;
+            SENT)
+                ;;
+            REQUEST_METHOD)
+                echo -ne "${GREEN}$value${NC} "
+                ;;
+            REQUEST_URI)
+                echo -ne "${BLUE}$value:${NC}\n"
+                ;;
+            *)
+                ;;
+        esac
+    done < /tmp/shibalog
+}
+
+while true; do
     nc -lp 1337 -e ./shiba.sh
-   #  nc -lp 1337 -e '
-   #      echo -ne "REEEE" > request.log
-   #  '
-   #  cat request.log
+    printlog
 done

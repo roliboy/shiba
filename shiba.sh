@@ -1,12 +1,48 @@
 #!/usr/bin/env bash
 
+startlog() {
+    echo -n '' > /tmp/shibalog
+}
+
+log() {
+    echo "$*" >> /tmp/shibalog
+}
+
+log_received_data() {
+    log "RECEIVED $*"
+}
+
+log_sent_data() {
+    log "SENT $*"
+}
+
+log_request_method() {
+    log "REQUEST_METHOD $*"
+}
+
+log_request_uri() {
+    log "REQUEST_URI $*"
+}
+
+log_request_header() {
+    log "REQUEST_HEADER $*"
+}
+
+log_response_header() {
+    log "RESPONSE_HEADER $*"
+}
+
 recv() {
-    echo "< $*" >>/tmp/log
+    local data
+    read -r data
+    data=${data%%$'\r'}
+    log_received_data "$data"
+    echo -n "$data"
 }
 
 send() {
-    echo "> $*" >>/tmp/log
-    printf '%s\r\n' "$*"
+    log_sent_data "$*"
+    echo -ne "$*\r\n"
 }
 
 trim() {
@@ -145,91 +181,52 @@ handle_resource_destroy() {
 }
 
 
+startlog
 
-read -r line || fail 400
-line=${line%%$'\r'}
-recv "$line"
+read -r REQUEST_METHOD REQUEST_URI REQUEST_HTTP_VERSION <<< "$(recv)"
+[[ -n $REQUEST_METHOD ]] || fail 400
+[[ -n $REQUEST_URI ]] || fail 400
+[[ -n $REQUEST_HTTP_VERSION ]] || fail 400
 
-read -r REQUEST_METHOD REQUEST_URI REQUEST_HTTP_VERSION <<< "$line"
+log_request_method "$REQUEST_METHOD"
+log_request_uri "$REQUEST_URI"
+
+# TODO: name reference
 declare -A REQUEST_HEADERS
-while read -r line; do
-    line=${line%%$'\r'}
-    recv "$line"
+while line="$(recv)"; do
     [ -z "$line" ] && break
+    # TODO: method for parsing headers
     IFS=':' read -ra content <<< "$line"
     header="${content[0]}"
     value="$(trim "${content[1]}")"
     REQUEST_HEADERS[$header]="$value"
+    log_request_header "${header} => $value"
 done
 
 
-for key in "${!REQUEST_HEADERS[@]}";
-    do recv "HEADER $key => ${REQUEST_HEADERS[$key]}";
+IFS='|' read -ra endpoints <<< "$SHIBA_RESOURCE_ENDPOINTS"
+IFS='|' read -ra files <<< "$SHIBA_RESOURCE_FILES"
+
+
+for i in "${!endpoints[@]}"; do
+    endpoint="${endpoints[i]}"
+    resource_file="${files[i]}"
+
+    regex="^${endpoint}/?$"
+    detail_regex="^${endpoint}/([^/]+)/?$"
+
+    if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+        id="${BASH_REMATCH[1]}"
+        handle_resource_retrieve "$resource_file" "$id"
+    elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+        handle_resource_list "$resource_file"
+    elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+        handle_resource_create "$resource_file"
+    elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+        id="${BASH_REMATCH[1]}"
+        handle_resource_update "$resource_file" "$id"
+    elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+        id="${BASH_REMATCH[1]}"
+        handle_resource_destroy "$resource_file" "$id"
+    fi
 done
-
-
-[ -n "$REQUEST_METHOD" ] || fail 400
-[ -n "$REQUEST_URI" ] || fail 400
-[ -n "$REQUEST_HTTP_VERSION" ] || fail 400
-
-
-
-IFS='|'; endpoints=($SHIBA_RESOURCE_ENDPOINTS); unset IFS
-IFS='|'; files=($SHIBA_RESOURCE_FILES); unset IFS
-
-
-recv "ENDPOINTS: ${endpoints[*]}"
-recv "FILES: ${files[*]}"
-
-# TODO: something
-if [[ $REQUEST_METHOD == "GET" ]]; then
-    for i in "${!endpoints[@]}"; do 
-        endpoint="${endpoints[i]}"
-        resource_file="${files[i]}"
-
-        regex="^${endpoint}/?$"
-        detail_regex="^${endpoint}/([^/]+)/?$"
-
-        if [[ $REQUEST_URI =~ $detail_regex ]]; then
-            id="${BASH_REMATCH[1]}"
-            handle_resource_retrieve "$resource_file" "$id"
-        elif [[ $REQUEST_URI =~ $regex ]]; then
-            handle_resource_list "$resource_file"
-        fi
-    done
-elif [[ $REQUEST_METHOD == "POST" ]]; then
-    for i in "${!endpoints[@]}"; do 
-        endpoint="${endpoints[i]}"
-        resource_file="${files[i]}"
-
-        regex="^${endpoint}/?$"
-
-        if [[ $REQUEST_URI =~ $regex ]]; then
-            handle_resource_create "$resource_file"
-        fi
-    done
-elif [[ $REQUEST_METHOD == "PUT" ]]; then
-    for i in "${!endpoints[@]}"; do 
-        endpoint="${endpoints[i]}"
-        resource_file="${files[i]}"
-
-        detail_regex="^${endpoint}/([^/]+)/?$"
-
-        if [[ $REQUEST_URI =~ $detail_regex ]]; then
-            id="${BASH_REMATCH[1]}"
-            handle_resource_update "$resource_file" "$id"
-        fi
-    done
-elif [[ $REQUEST_METHOD == "DELETE" ]]; then
-    for i in "${!endpoints[@]}"; do 
-        endpoint="${endpoints[i]}"
-        resource_file="${files[i]}"
-
-        detail_regex="^${endpoint}/([^/]+)/?$"
-
-        if [[ $REQUEST_URI =~ $detail_regex ]]; then
-            id="${BASH_REMATCH[1]}"
-            handle_resource_destroy "$resource_file" "$id"
-        fi
-    done
-fi
