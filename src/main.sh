@@ -45,6 +45,12 @@ for i in "${!FUNCTION_ENDPOINTS[@]}"; do
     echo -e "  >=> ${GREEN}GET/POST${NC} ${BLUE}${endpoint}${NC}"
     echo -e "        ${CYAN}λ${NC} $file"
 done
+for i in "${!PROXY_ENDPOINTS[@]}"; do 
+    endpoint="${PROXY_ENDPOINTS[i]}"
+    target="${PROXY_TARGETS[i]}"
+    echo -e "  >=> ${GREEN}*${NC} ${BLUE}${endpoint}${NC}"
+    echo -e "        ${CYAN}ψ${NC} $target"
+done
 echo -e ""
 
 

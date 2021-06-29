@@ -68,6 +68,8 @@ handle_client() {
     IFS='|' read -ra static_directories <<< "$SHIBA_STATIC_DIRECTORIES"
     IFS='|' read -ra function_endpoints <<< "$SHIBA_FUNCTION_ENDPOINTS"
     IFS='|' read -ra function_targets <<< "$SHIBA_FUNCTION_TARGETS"
+    IFS='|' read -ra proxy_endpoints <<< "$SHIBA_PROXY_ENDPOINTS"
+    IFS='|' read -ra proxy_targets <<< "$SHIBA_PROXY_TARGETS"
 
     DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
     declare -a RESPONSE_HEADERS=(
@@ -105,14 +107,14 @@ handle_client() {
     # TODO: this block assumes endpoints have no trailing slashes
     for i in "${!function_endpoints[@]}"; do
         endpoint="${function_endpoints[i]}"
-        executable="${function_targets[i]}"
+        command="${function_targets[i]}"
 
         regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')/?$"
 
         log "REGEX $regex"
 
         if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-            handle_executable "$executable" "${BASH_REMATCH[@]:1}"
+            handle_command "$command" "${BASH_REMATCH[@]:1}"
         fi
         # if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
         #     resource="${BASH_REMATCH[1]}"
@@ -139,6 +141,22 @@ handle_client() {
         if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             resource="${BASH_REMATCH[1]}"
             handle_static_file "$directory/$resource"
+        fi
+    done
+
+    # TODO: this block assumes endpoints have no trailing slashes
+    for i in "${!proxy_endpoints[@]}"; do
+        endpoint="${proxy_endpoints[i]}"
+        target="${proxy_targets[i]}"
+
+        # TODO: something about the trailing slashes
+        regex="^${endpoint}/(.*)$"
+
+        log "RX $regex"
+        # TODO: handle other methods
+        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            path="${BASH_REMATCH[1]}"
+            handle_proxy "$REQUEST_METHOD" "$target/$path"
         fi
     done
 }

@@ -11,6 +11,8 @@ RESOURCE_ENDPOINTS=()
 RESOURCE_FILES=()
 FUNCTION_ENDPOINTS=()
 FUNCTION_FILES=()
+PROXY_ENDPOINTS=()
+PROXY_TARGETS=()
 
 while [ "$#" -gt 0 ]; do
 case "$1" in
@@ -57,6 +59,13 @@ case "$1" in
         FUNCTION_FILES+=("$file")
         shift 3
         ;;
+    proxy)
+        endpoint="$2"
+        target="$3"
+        PROXY_ENDPOINTS+=("$endpoint")
+        PROXY_TARGETS+=("$target")
+        shift 3
+        ;;
     *)
         echo "unknown flag/option: '$1'"
         exit 1
@@ -81,3 +90,7 @@ SHIBA_FUNCTION_ENDPOINTS=$(IFS='|'; echo "${FUNCTION_ENDPOINTS[*]}")
 export SHIBA_FUNCTION_ENDPOINTS
 SHIBA_FUNCTION_TARGETS=$(IFS='|'; echo "${FUNCTION_FILES[*]}")
 export SHIBA_FUNCTION_TARGETS
+SHIBA_PROXY_ENDPOINTS=$(IFS='|'; echo "${PROXY_ENDPOINTS[*]}")
+export SHIBA_PROXY_ENDPOINTS
+SHIBA_PROXY_TARGETS=$(IFS='|'; echo "${PROXY_TARGETS[*]}")
+export SHIBA_PROXY_TARGETS
