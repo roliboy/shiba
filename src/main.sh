@@ -47,26 +47,6 @@ for i in "${!FUNCTION_ENDPOINTS[@]}"; do
 done
 echo -e ""
 
-printlog() {
-    while read -r line; do
-        event="$(cut -d' ' -f1 <<< "$line")"
-        value="$(cut -d' ' -f2- <<< "$line")"
-        case "$event" in
-            RECEIVED)
-                ;;
-            SENT)
-                ;;
-            REQUEST_METHOD)
-                echo -ne "${GREEN}$value${NC} "
-                ;;
-            REQUEST_URI)
-                echo -ne "${BLUE}$value:${NC}\n"
-                ;;
-            *)
-                ;;
-        esac
-    done < /tmp/shibalog
-}
 
 while true; do
     nc -lp 1337 -e 'handle_client'
