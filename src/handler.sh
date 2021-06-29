@@ -66,6 +66,8 @@ handle_client() {
     IFS='|' read -ra static_files <<< "$SHIBA_STATIC_FILES"
     IFS='|' read -ra static_directory_endpoints <<< "$SHIBA_STATIC_DIRECTORY_ENDPOINTS"
     IFS='|' read -ra static_directories <<< "$SHIBA_STATIC_DIRECTORIES"
+    IFS='|' read -ra function_endpoints <<< "$SHIBA_FUNCTION_ENDPOINTS"
+    IFS='|' read -ra function_targets <<< "$SHIBA_FUNCTION_TARGETS"
 
     DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
     declare -a RESPONSE_HEADERS=(
@@ -98,6 +100,24 @@ handle_client() {
             id="${BASH_REMATCH[1]}"
             handle_resource_destroy "$resource_file" "$id"
         fi
+    done
+
+    # TODO: this block assumes endpoints have no trailing slashes
+    for i in "${!function_endpoints[@]}"; do
+        endpoint="${function_endpoints[i]}"
+        executable="${function_targets[i]}"
+
+        regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')/?$"
+
+        log "REGEX $regex"
+
+        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            handle_executable "$executable" "${BASH_REMATCH[@]:1}"
+        fi
+        # if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+        #     resource="${BASH_REMATCH[1]}"
+        #     handle_static_file "$directory/$resource"
+        # fi
     done
 
     for i in "${!static_endpoints[@]}"; do

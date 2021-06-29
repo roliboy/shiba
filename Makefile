@@ -9,6 +9,10 @@ assemble:
 	@echo '' >> shiba
 	@cat src/argparser.sh >> shiba
 	@echo '' >> shiba
+	@cat src/log.sh >> shiba
+	@echo '' >> shiba
+	@cat src/handlers/* >> shiba
+	@echo '' >> shiba
 	@cat src/handler.sh >> shiba
 	@echo '' >> shiba
 	@cat src/main.sh >> shiba
