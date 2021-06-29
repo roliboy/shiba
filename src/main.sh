@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-splash
-
 exit_handler() {
     echo -e "${YELLOW}shutting down...${NC}"
     exit 0
@@ -9,6 +7,8 @@ exit_handler() {
 
 trap exit_handler SIGINT
 stty -echoctl
+
+splash
 
 echo -e "shiba is listening"
 echo -e "  --> ${YELLOW}address${NC}: ${ADDRESS}"

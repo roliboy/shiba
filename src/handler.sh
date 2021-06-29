@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# readenv() {
+#     declare -n values="$1"
+
+# }
+
 recv() {
     local data
     read -r data
@@ -60,6 +65,8 @@ handle_client() {
         log_request_header "${header} => $value"
     done
 
+    
+
     IFS='|' read -ra resource_endpoints <<< "$SHIBA_RESOURCE_ENDPOINTS"
     IFS='|' read -ra resource_files <<< "$SHIBA_RESOURCE_FILES"
     IFS='|' read -ra static_endpoints <<< "$SHIBA_STATIC_ENDPOINTS"
@@ -81,83 +88,83 @@ handle_client() {
         "Access-Control-Allow-Headers: *"
     )
 
-    for i in "${!resource_endpoints[@]}"; do
-        endpoint="${resource_endpoints[i]}"
-        resource_file="${resource_files[i]}"
-
-        regex="^${endpoint}/?$"
-        detail_regex="^${endpoint}/([^/]+)/?$"
-
-        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
-            id="${BASH_REMATCH[1]}"
-            handle_resource_retrieve "$resource_file" "$id"
-        elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-            handle_resource_list "$resource_file"
-        elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-            handle_resource_create "$resource_file"
-        elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
-            id="${BASH_REMATCH[1]}"
-            handle_resource_update "$resource_file" "$id"
-        elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
-            id="${BASH_REMATCH[1]}"
-            handle_resource_destroy "$resource_file" "$id"
-        fi
-    done
-
-    # TODO: this block assumes endpoints have no trailing slashes
-    for i in "${!function_endpoints[@]}"; do
-        endpoint="${function_endpoints[i]}"
-        command="${function_targets[i]}"
-
-        regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')/?$"
-
-        log "REGEX $regex"
-
-        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-            handle_command "$command" "${BASH_REMATCH[@]:1}"
-        fi
-        # if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-        #     resource="${BASH_REMATCH[1]}"
-        #     handle_static_file "$directory/$resource"
-        # fi
-    done
-
-    for i in "${!static_endpoints[@]}"; do
-        endpoint="${static_endpoints[i]}"
-        static_file="${static_files[i]}"
+    while read -r entry; do
+        IFS=$'\n' read -rd '' endpoint file <<< "$(split_object "$entry")"
 
         regex="^${endpoint}$"
         if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-            handle_static_file "$static_file"
+            handle_static_file "$file"
         fi
-    done
+    done <<< "$(split_array "$SHIBA_STATIC_FILES")"
 
-    # TODO: this block assumes endpoints have no trailing slashes
-    for i in "${!static_directory_endpoints[@]}"; do
-        endpoint="${static_directory_endpoints[i]}"
-        directory="${static_directories[i]}"
 
-        regex="^${endpoint}/(.*)$"
-        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-            resource="${BASH_REMATCH[1]}"
-            handle_static_file "$directory/$resource"
-        fi
-    done
+    # for i in "${!resource_endpoints[@]}"; do
+    #     endpoint="${resource_endpoints[i]}"
+    #     resource_file="${resource_files[i]}"
 
-    # TODO: this block assumes endpoints have no trailing slashes
-    for i in "${!proxy_endpoints[@]}"; do
-        endpoint="${proxy_endpoints[i]}"
-        target="${proxy_targets[i]}"
+    #     regex="^${endpoint}/?$"
+    #     detail_regex="^${endpoint}/([^/]+)/?$"
 
-        # TODO: something about the trailing slashes
-        regex="^${endpoint}/(.*)$"
+    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+    #         id="${BASH_REMATCH[1]}"
+    #         handle_resource_retrieve "$resource_file" "$id"
+    #     elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+    #         handle_resource_list "$resource_file"
+    #     elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+    #         handle_resource_create "$resource_file"
+    #     elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+    #         id="${BASH_REMATCH[1]}"
+    #         handle_resource_update "$resource_file" "$id"
+    #     elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+    #         id="${BASH_REMATCH[1]}"
+    #         handle_resource_destroy "$resource_file" "$id"
+    #     fi
+    # done
 
-        log "RX $regex"
-        # TODO: handle other methods
-        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-            path="${BASH_REMATCH[1]}"
-            handle_proxy "$REQUEST_METHOD" "$target/$path"
-        fi
-    done
+    # # TODO: this block assumes endpoints have no trailing slashes
+    # for i in "${!function_endpoints[@]}"; do
+    #     endpoint="${function_endpoints[i]}"
+    #     command="${function_targets[i]}"
+
+    #     regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')/?$"
+
+    #     log "REGEX $regex"
+
+    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+    #         handle_command "$command" "${BASH_REMATCH[@]:1}"
+    #     fi
+    #     # if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+    #     #     resource="${BASH_REMATCH[1]}"
+    #     #     handle_static_file "$directory/$resource"
+    #     # fi
+    # done
+
+    # # TODO: this block assumes endpoints have no trailing slashes
+    # for i in "${!static_directory_endpoints[@]}"; do
+    #     endpoint="${static_directory_endpoints[i]}"
+    #     directory="${static_directories[i]}"
+
+    #     regex="^${endpoint}/(.*)$"
+    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+    #         resource="${BASH_REMATCH[1]}"
+    #         handle_static_file "$directory/$resource"
+    #     fi
+    # done
+
+    # # TODO: this block assumes endpoints have no trailing slashes
+    # for i in "${!proxy_endpoints[@]}"; do
+    #     endpoint="${proxy_endpoints[i]}"
+    #     target="${proxy_targets[i]}"
+
+    #     # TODO: something about the trailing slashes
+    #     regex="^${endpoint}/(.*)$"
+
+    #     log "RX $regex"
+    #     # TODO: handle other methods
+    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+    #         path="${BASH_REMATCH[1]}"
+    #         handle_proxy "$REQUEST_METHOD" "$target/$path"
+    #     fi
+    # done
 }
 export -f handle_client
