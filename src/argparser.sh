@@ -65,9 +65,8 @@ case "$1" in
         ;;
     resource|r)
         endpoint="$2"
-        file="$3"
-        RESOURCE_ENDPOINTS+=("$endpoint")
-        RESOURCE_FILES+=("$file")
+        target="$3"
+        RESOURCES+=("$(join_object "$endpoint" "$target")")
         shift 3
         ;;
     command|c)
@@ -93,24 +92,4 @@ declare -x SHIBA_STATIC_FILES="$(join_array "${STATIC_FILES[@]}")"
 declare -x SHIBA_STATIC_DIRECTORIES="$(join_array "${STATIC_DIRECTORIES[@]}")"
 declare -x SHIBA_PROXIES="$(join_array "${PROXIES[@]}")"
 declare -x SHIBA_COMMANDS="$(join_array "${COMMANDS[@]}")"
-
-# SHIBA_RESOURCE_ENDPOINTS=$(IFS='|'; echo "${RESOURCE_ENDPOINTS[*]}")
-# export SHIBA_RESOURCE_ENDPOINTS
-# SHIBA_RESOURCE_FILES=$(IFS='|'; echo "${RESOURCE_FILES[*]}")
-# export SHIBA_RESOURCE_FILES
-# SHIBA_STATIC_ENDPOINTS=$(IFS='|'; echo "${STATIC_ENDPOINTS[*]}")
-# export SHIBA_STATIC_ENDPOINTS
-# SHIBA_STATIC_FILES=$(IFS='|'; echo "${STATIC_FILES[*]}")
-# export SHIBA_STATIC_FILES
-# SHIBA_STATIC_DIRECTORY_ENDPOINTS=$(IFS='|'; echo "${STATIC_DIRECTORY_ENDPOINTS[*]}")
-# export SHIBA_STATIC_DIRECTORY_ENDPOINTS
-# SHIBA_STATIC_DIRECTORIES=$(IFS='|'; echo "${STATIC_DIRECTORIES[*]}")
-# export SHIBA_STATIC_DIRECTORIES
-# SHIBA_FUNCTION_ENDPOINTS=$(IFS='|'; echo "${FUNCTION_ENDPOINTS[*]}")
-# export SHIBA_FUNCTION_ENDPOINTS
-# SHIBA_FUNCTION_TARGETS=$(IFS='|'; echo "${FUNCTION_FILES[*]}")
-# export SHIBA_FUNCTION_TARGETS
-# SHIBA_PROXY_ENDPOINTS=$(IFS='|'; echo "${PROXY_ENDPOINTS[*]}")
-# export SHIBA_PROXY_ENDPOINTS
-# SHIBA_PROXY_TARGETS=$(IFS='|'; echo "${PROXY_TARGETS[*]}")
-# export SHIBA_PROXY_TARGETS
+declare -x SHIBA_RESOURCES="$(join_array "${RESOURCES[@]}")"

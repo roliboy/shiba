@@ -36,6 +36,15 @@ fail() {
 }
 export -f fail
 
+parse_endpoints() {
+    local -n array="$1"
+    while read -r entry; do
+        [[ -z $entry ]] && continue
+        array+=("$entry")
+    done
+}
+export -f parse_endpoints
+
 
 handle_client() {
     startlog
@@ -71,17 +80,24 @@ handle_client() {
         "Access-Control-Allow-Headers: *"
     )
 
-    # TODO: skip when no content-length header is present
-    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
-    # TODO: this
-    IFS= read -d '@' -rn "$CONTENT_LENGTH" body
-    body=${body%%$'\r'}
-    log "BODY: $body"
+    # # TODO: remove
+    # # TODO: skip when no content-length header is present
+    # CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
+    # # TODO: this
+    # IFS= read -d '@' -rn "$CONTENT_LENGTH" body
+    # body=${body%%$'\r'}
+    # log "BODY: $body"
+
+
+    parse_endpoints STATIC_FILES <<< "$SHIBA_STATIC_FILES"
+    parse_endpoints STATIC_DIRECTORIES <<< "$SHIBA_STATIC_DIRECTORIES"
+    parse_endpoints COMMANDS <<< "$SHIBA_COMMANDS"
+    parse_endpoints PROXIES <<< "$SHIBA_PROXIES"
+    parse_endpoints RESOURCES <<< "$SHIBA_RESOURCES"
+
 
     # TODO: merge these two (generalize regex)
-    # TODO: function to parse object arrays
-    while read -r entry; do
-        [[ -z $entry ]] && continue
+    for entry in "${STATIC_FILES[@]}"; do
         IFS=$'\n' read -rd '' endpoint file <<< "$(split_object "$entry")"
 
         regex="^${endpoint}$"
@@ -90,10 +106,9 @@ handle_client() {
             log_endpoint_match "$endpoint"
             handle_static_file "$file"
         fi
-    done <<< "$(split_array "$SHIBA_STATIC_FILES")"
+    done
 
-    while read -r entry; do
-        [[ -z $entry ]] && continue
+    for entry in "${STATIC_DIRECTORIES[@]}"; do
         IFS=$'\n' read -rd '' endpoint directory <<< "$(split_object "$entry")"
 
         regex="^${endpoint}(.*)$"
@@ -103,9 +118,9 @@ handle_client() {
             resource="${BASH_REMATCH[1]}"
             handle_static_file "$directory$resource"
         fi
-    done <<< "$(split_array "$SHIBA_STATIC_DIRECTORIES")"
+    done
 
-    while read -r entry; do
+    for entry in "${COMMANDS[@]}"; do
         [[ -z $entry ]] && continue
         IFS=$'\n' read -rd '' endpoint command <<< "$(split_object "$entry")"
 
@@ -115,11 +130,11 @@ handle_client() {
         if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
-            handle_command "$command" "${BASH_REMATCH[@]:1}" <<< "$body"
+            handle_command "$command" "${BASH_REMATCH[@]:1}"
         fi
-    done <<< "$(split_array "$SHIBA_COMMANDS")"
+    done
 
-    while read -r entry; do
+    for entry in "${PROXIES[@]}"; do
         [[ -z $entry ]] && continue
         IFS=$'\n' read -rd '' endpoint server <<< "$(split_object "$entry")"
 
@@ -131,32 +146,31 @@ handle_client() {
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
             path="${BASH_REMATCH[1]}"
-            handle_proxy "$REQUEST_METHOD" "$server$path" <<< "$body"
+            handle_proxy "$REQUEST_METHOD" "$server$path"
         fi
-    done <<< "$(split_array "$SHIBA_PROXIES")"
+    done
 
-    # for i in "${!resource_endpoints[@]}"; do
-    #     endpoint="${resource_endpoints[i]}"
-    #     resource_file="${resource_files[i]}"
+    for entry in "${RESOURCES[@]}"; do
+        IFS=$'\n' read -rd '' endpoint resource <<< "$(split_object "$entry")"
 
-    #     regex="^${endpoint}/?$"
-    #     detail_regex="^${endpoint}/([^/]+)/?$"
+        regex="^${endpoint}/?$"
+        detail_regex="^${endpoint}/([^/]+)/?$"
 
-    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
-    #         id="${BASH_REMATCH[1]}"
-    #         handle_resource_retrieve "$resource_file" "$id"
-    #     elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #         handle_resource_list "$resource_file"
-    #     elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #         handle_resource_create "$resource_file"
-    #     elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
-    #         id="${BASH_REMATCH[1]}"
-    #         handle_resource_update "$resource_file" "$id"
-    #     elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
-    #         id="${BASH_REMATCH[1]}"
-    #         handle_resource_destroy "$resource_file" "$id"
-    #     fi
-    # done
+        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+            id="${BASH_REMATCH[1]}"
+            handle_resource_retrieve "$resource" "$id"
+        elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            handle_resource_list "$resource"
+        elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            handle_resource_create "$resource"
+        elif [[ $REQUEST_METHOD == "PUT" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+            id="${BASH_REMATCH[1]}"
+            handle_resource_update "$resource" "$id"
+        elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+            id="${BASH_REMATCH[1]}"
+            handle_resource_destroy "$resource" "$id"
+        fi
+    done
 
 }
 export -f handle_client
