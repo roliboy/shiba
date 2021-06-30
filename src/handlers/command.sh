@@ -3,34 +3,41 @@
 # TODO: 404 if file does not exist
 handle_command() {
     command="$1"
+    stdin="$(cat)"
     shift
 
-    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
-
-    # TODO: something about this
-    read -d'@' -rn "$CONTENT_LENGTH" body
-    body=${body%%$'\r'}
-    log "BODY: $body"
-
+    # TODO: make this less spaghett
     read -ra parts <<< "$command"
+    command="${parts[0]}"
+    arguments=()
 
-    log "COMMAND: ${parts[0]}"
-    log "ARGUMENTS: ${parts[*]:1}"
+    if [[ ${#parts[@]} -gt 1 ]]; then
+        arguments=("${parts[*]:1}")
+    fi
 
-    # TODO: prepend ./ when name is not fully qualified
-    # result="$("$command" "$*" <<< "$body")"
-    # TODO: no "$*" when the endpoint takes no path variables
-    result="$("${parts[0]}" "${parts[@]:1}" <<< "$body")"
-    # TODO: no arguments when command does not contain spaces?
-    # result="$("${parts[0]}" "${parts[@]:1}" <<< "$body")"
+    arguments+=("$@")
+
+    
+    log "COMMAND: $command"
+    log "ARGUMENTS: ${arguments[*]}"
+    log "STDIN $stdin"
+
+    # TODO: prepend ./ when name is not fully qualified?
+
+    if [[ ${#arguments[@]} == 0 ]]; then
+        result="$("$command" <<< "$stdin")"
+    else
+        log "EXEC: $command ${arguments[*]} | $stdin"
+        result="$("$command" "${arguments[@]}" <<< "$stdin")"
+    fi
 
     log "RESULT: $result"
 
 
-
+    # TODO: respond with 500 internal server error if command fails
     RESPONSE_HEADERS+=("Content-Length: ${#result}")
     # TODO: set content-type to application/json if the result is valid json?
-    RESPONSE_HEADERS+=("Content-Type: text/html")
+    RESPONSE_HEADERS+=("Content-Type: text/plain")
     
     send "HTTP/1.0 200 OK"
     for i in "${RESPONSE_HEADERS[@]}"; do
@@ -38,7 +45,7 @@ handle_command() {
     done
     send
 
-    # breaks when too many newlines in result
+    # TODO: breaks when too many newlines in result
     send "$result"
 }
 export -f handle_command
