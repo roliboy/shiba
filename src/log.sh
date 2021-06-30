@@ -16,12 +16,18 @@ printlog() {
                 echo -ne "${BLUE}$value:${NC}\n"
                 ;;
             REGEX_MATCH)
-                echo -ne "    ${GREEN}matched${NC} $value -> "
+                echo -ne "    ${CYAN}matched${NC} $value -> "
                 ;;
             ENDPOINT_MATCH)
                 echo -ne "${YELLOW}$value${NC}\n"
                 ;;
-            *)
+            STATIC_FILE_SENT)
+                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
+                echo -ne "    ${CYAN}file${NC} $value ${GREEN}sent${NC}\n"
+                ;;
+            STATIC_FILE_NOT_FOUND)
+                echo -ne "    ${CYAN}code${NC} ${RED}404 Not Found${NC}\n"
+                echo -ne "    ${CYAN}file${NC} $value ${RED}not found${NC}\n"
                 ;;
         esac
     done < /tmp/shibalog
@@ -76,3 +82,13 @@ log_regex_match() {
     log "REGEX_MATCH $*"
 }
 export -f log_regex_match
+
+log_handler_static_file_sent() {
+    log "STATIC_FILE_SENT $*"
+}
+export -f log_handler_static_file_sent
+
+log_handler_static_file_not_found() {
+    log "STATIC_FILE_NOT_FOUND $*"
+}
+export -f log_handler_static_file_not_found
