@@ -8,7 +8,7 @@ handle_resource_update() {
 
     read -rn "$CONTENT_LENGTH" body
     body=${body%%$'\r'}
-    recv "BODY: $body"
+    log "BODY: $body"
 
     data="$(cat "$resource_file")"
     element="$(jq -c ". + {id: $resource_id}" <<< "$body")"

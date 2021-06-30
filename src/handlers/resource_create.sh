@@ -5,10 +5,12 @@ handle_resource_create() {
  
     CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
 
+    # head -c "$CONTENT_LENGTH" /dev/stdin
     read -rn "$CONTENT_LENGTH" body
     body=${body%%$'\r'}
-    recv "BODY: $body"
+    log "BODY: $body"
 
+    # TODO: rework this
     data="$(cat "$resource_file")"
     id="$(($(jq '.[-1].id' <<< "$data") + 1))"
     element="$(jq -c ". + {id: $id}" <<< "$body")"
@@ -18,6 +20,7 @@ handle_resource_create() {
     
     RESPONSE_HEADERS+=("Content-Length: ${#element}")
     RESPONSE_HEADERS+=("Content-Type: application/json")
+    
     send "HTTP/1.0 201 CREATED"
     for i in "${RESPONSE_HEADERS[@]}"; do
         send "$i"

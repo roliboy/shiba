@@ -2,6 +2,7 @@
 
 handle_resource_list() {
     resource_file="$1"
+    
     RESPONSE_HEADERS+=("Content-Length: $(stat --printf='%s' "$resource_file")")
     RESPONSE_HEADERS+=("Content-Type: application/json")
 
@@ -11,6 +12,6 @@ handle_resource_list() {
     done
     send
 
-    send "$(cat "$resource_file")"
+    send_file "$resource_file"
 }
 export -f handle_resource_list
