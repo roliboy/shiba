@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # TODO: this
-parse_proxy_response() {
+handle_proxy_response() {
     read -r data
     data=${data%%$'\r'}
     
@@ -22,56 +22,74 @@ parse_proxy_response() {
         fi
     done
 
-    read -d'@' -r -n "$contentlength" line
-    echo "$line"
+
+    # TODO: forward content-type
+    RESPONSE_HEADERS+=("Content-Length: $contentlength")
+    # TODO: set content-type to application/json if the result is valid json?
+    RESPONSE_HEADERS+=("Content-Type: text/plain")
+    
+    send "HTTP/1.0 200 OK"
+    for i in "${RESPONSE_HEADERS[@]}"; do
+        send "$i"
+    done
+    send
+
+    head -c "$contentlength" /dev/stdin
+
+    # echo "$content" > /tmp/shibafile
+    # TODO: breaks when too many newlines in result
+    # send_file /tmp/shibafile
+
+    # read -d '@' -r -n "$contentlength" line
+    # echo "$line"
+    # head -c "$contentlength" /dev/stdin | base64
 }
-export -f parse_proxy_response
+export -f handle_proxy_response
 
 handle_proxy() {
     method="$1"
     url="$2"
-
-    # CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
-
-    # # TODO: something about this
-    # read -d'@' -rn "$CONTENT_LENGTH" body
-    # body=${body%%$'\r'}
-    # log "BODY: $body"
-
-    # read -ra parts <<< "$command"
+    body="$(cat)"
 
     log "METHOD: $method"
     log "URL: $url"
+    log "BODY: $body"
 
     # echo -ne "GET ${} Host: localhost\nUser-Agent: shiba-proxy\nAccept: */*"
-
-    # nc "$url"
 
     if [[ "$url" =~ ^([^:]+):([0-9]+)(\/?.*) ]]; then
         server="${BASH_REMATCH[1]}"
         port="${BASH_REMATCH[2]}"
         resource="${BASH_REMATCH[3]}"
 
-        result="$(echo -ne "$method $resource HTTP/1.1\n\n" | nc "$server" "$port")"
-        result=${result%%$'\r'}
-        
-        content="$(parse_proxy_response <<< "$result")"
-        log "CONTENT $content"
+        log "SERVER: $server"
+        log "PORT: $port"
+        log "RESOURCE: $resource"
 
-        RESPONSE_HEADERS+=("Content-Length: ${#content}")
-        # TODO: set content-type to application/json if the result is valid json?
-        RESPONSE_HEADERS+=("Content-Type: text/html")
-        
-        send "HTTP/1.0 200 OK"
-        for i in "${RESPONSE_HEADERS[@]}"; do
-            send "$i"
-        done
-        send
+        # TODO: handle server error
+        echo -ne "$method $resource HTTP/1.1\n\n" | nc "$server" "$port" | handle_proxy_response
+        # result=${result%%$'\r'}
 
-        # breaks when too many newlines in result
-        send "$content"
+        # content="$(handle_proxy_response <<< "$result")"
+        # log "CONTENT: $content"
+
+        # content=${content%%$'\n'}
+        # content="$(tr '\n' ' ' <<< "$content")"
+
+        # TODO: forward content-type
+        # RESPONSE_HEADERS+=("Content-Length: ${#content}")
+        # # TODO: set content-type to application/json if the result is valid json?
+        # RESPONSE_HEADERS+=("Content-Type: text/plain")
+        
+        # send "HTTP/1.0 200 OK"
+        # for i in "${RESPONSE_HEADERS[@]}"; do
+        #     send "$i"
+        # done
+        # send
+
+        # echo "$content" > /tmp/shibafile
+        # # TODO: breaks when too many newlines in result
+        # send_file /tmp/shibafile
     fi
-
-    
 }
 export -f handle_proxy

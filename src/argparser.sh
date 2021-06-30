@@ -48,7 +48,7 @@ case "$1" in
         PORT="$2"
         shift 2
         ;;
-    static)
+    static|s)
         endpoint="$2"
         target="$3"
         if [[ -d $target ]]; then
@@ -63,20 +63,20 @@ case "$1" in
         fi
         shift 3
         ;;
-    resource)
+    resource|r)
         endpoint="$2"
         file="$3"
         RESOURCE_ENDPOINTS+=("$endpoint")
         RESOURCE_FILES+=("$file")
         shift 3
         ;;
-    command)
+    command|c)
         endpoint="$2"
         target="$3"
         COMMANDS+=("$(join_object "$endpoint" "$target")")
         shift 3
         ;;
-    proxy)
+    proxy|p)
         endpoint="$2"
         target="$3"
         PROXIES+=("$(join_object "$endpoint" "$target")")

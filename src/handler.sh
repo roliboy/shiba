@@ -71,12 +71,14 @@ handle_client() {
         "Access-Control-Allow-Headers: *"
     )
 
+    # TODO: skip when no content-length header is present
     CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
     # TODO: this
     IFS= read -d '@' -rn "$CONTENT_LENGTH" body
     body=${body%%$'\r'}
     log "BODY: $body"
 
+    # TODO: merge these two (generalize regex)
     # TODO: function to parse object arrays
     while read -r entry; do
         [[ -z $entry ]] && continue
@@ -117,7 +119,21 @@ handle_client() {
         fi
     done <<< "$(split_array "$SHIBA_COMMANDS")"
 
+    while read -r entry; do
+        [[ -z $entry ]] && continue
+        IFS=$'\n' read -rd '' endpoint server <<< "$(split_object "$entry")"
 
+        # TODO: something about the trailing slashes
+        regex="^${endpoint}(/.*)?$"
+
+        # TODO: handle other methods
+        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            log_regex_match "$regex"
+            log_endpoint_match "$endpoint"
+            path="${BASH_REMATCH[1]}"
+            handle_proxy "$REQUEST_METHOD" "$server$path" <<< "$body"
+        fi
+    done <<< "$(split_array "$SHIBA_PROXIES")"
 
     # for i in "${!resource_endpoints[@]}"; do
     #     endpoint="${resource_endpoints[i]}"
@@ -142,20 +158,5 @@ handle_client() {
     #     fi
     # done
 
-    # # TODO: this block assumes endpoints have no trailing slashes
-    # for i in "${!proxy_endpoints[@]}"; do
-    #     endpoint="${proxy_endpoints[i]}"
-    #     target="${proxy_targets[i]}"
-
-    #     # TODO: something about the trailing slashes
-    #     regex="^${endpoint}/(.*)$"
-
-    #     log "RX $regex"
-    #     # TODO: handle other methods
-    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #         path="${BASH_REMATCH[1]}"
-    #         handle_proxy "$REQUEST_METHOD" "$target/$path"
-    #     fi
-    # done
 }
 export -f handle_client
