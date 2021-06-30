@@ -60,14 +60,6 @@ handle_client() {
         log_request_header "${header} => $value"
     done
 
-    
-    # IFS='|' read -ra resource_endpoints <<< "$SHIBA_RESOURCE_ENDPOINTS"
-    # IFS='|' read -ra resource_files <<< "$SHIBA_RESOURCE_FILES"
-    # IFS='|' read -ra function_endpoints <<< "$SHIBA_FUNCTION_ENDPOINTS"
-    # IFS='|' read -ra function_targets <<< "$SHIBA_FUNCTION_TARGETS"
-    # IFS='|' read -ra proxy_endpoints <<< "$SHIBA_PROXY_ENDPOINTS"
-    # IFS='|' read -ra proxy_targets <<< "$SHIBA_PROXY_TARGETS"
-
     # TODO: something with this
     DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
     declare -a RESPONSE_HEADERS=(
@@ -79,6 +71,13 @@ handle_client() {
         "Access-Control-Allow-Headers: *"
     )
 
+    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
+    # TODO: this
+    IFS= read -d '@' -rn "$CONTENT_LENGTH" body
+    body=${body%%$'\r'}
+    log "BODY: $body"
+
+    # TODO: function to parse object arrays
     while read -r entry; do
         [[ -z $entry ]] && continue
         IFS=$'\n' read -rd '' endpoint file <<< "$(split_object "$entry")"
@@ -104,23 +103,20 @@ handle_client() {
         fi
     done <<< "$(split_array "$SHIBA_STATIC_DIRECTORIES")"
 
-    # while read -r entry; do
-    #     IFS=$'\n' read -rd '' endpoint file <<< "$(split_object "$entry")"
-    #     endpoint="${function_endpoints[i]}"
-    #     command="${function_targets[i]}"
+    while read -r entry; do
+        [[ -z $entry ]] && continue
+        IFS=$'\n' read -rd '' endpoint command <<< "$(split_object "$entry")"
 
-    #     regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')/?$"
+        # TODO: match any request method and forward it to script
+        # regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')/?$"
+        regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')$"
+        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            log_regex_match "$regex"
+            log_endpoint_match "$endpoint"
+            handle_command "$command" "${BASH_REMATCH[@]:1}" <<< "$body"
+        fi
+    done <<< "$(split_array "$SHIBA_COMMANDS")"
 
-    #     log "REGEX $regex"
-
-    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #         handle_command "$command" "${BASH_REMATCH[@]:1}"
-    #     fi
-    #     # if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #     #     resource="${BASH_REMATCH[1]}"
-    #     #     handle_static_file "$directory/$resource"
-    #     # fi
-    # done
 
 
     # for i in "${!resource_endpoints[@]}"; do

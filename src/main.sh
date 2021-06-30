@@ -28,6 +28,16 @@ for entry in "${STATIC_DIRECTORIES[@]}"; do
     echo -e "  >=> ${GREEN}GET${NC} ${BLUE}${endpoint}${NC}"
     echo -e "        ${CYAN}Σ${NC} $directory"
 done
+for entry in "${PROXIES[@]}"; do 
+    IFS=$'\n' read -rd '' endpoint server <<< "$(split_object "$entry")"
+    echo -e "  >=> ${GREEN}*${NC} ${BLUE}${endpoint}${NC}"
+    echo -e "        ${CYAN}ψ${NC} $server"
+done
+for entry in "${COMMANDS[@]}"; do 
+    IFS=$'\n' read -rd '' endpoint command <<< "$(split_object "$entry")"
+    echo -e "  >=> ${GREEN}GET/POST${NC} ${BLUE}${endpoint}${NC}"
+    echo -e "        ${CYAN}λ${NC} $command"
+done
 # for i in "${!RESOURCE_ENDPOINTS[@]}"; do 
 #     endpoint="${RESOURCE_ENDPOINTS[i]}"
 #     file="${RESOURCE_FILES[i]}"
@@ -35,18 +45,6 @@ done
 #     echo -e "        ${CYAN}δ${NC} $file"
 #     echo -e "  >=> ${GREEN}GET/PUT/DELETE${NC} ${BLUE}${endpoint}/<id>${NC}"
 #     echo -e "        ${CYAN}δ${NC} $file"
-# done
-# for i in "${!FUNCTION_ENDPOINTS[@]}"; do 
-#     endpoint="${FUNCTION_ENDPOINTS[i]}"
-#     file="${FUNCTION_FILES[i]}"
-#     echo -e "  >=> ${GREEN}GET/POST${NC} ${BLUE}${endpoint}${NC}"
-#     echo -e "        ${CYAN}λ${NC} $file"
-# done
-# for i in "${!PROXY_ENDPOINTS[@]}"; do 
-#     endpoint="${PROXY_ENDPOINTS[i]}"
-#     target="${PROXY_TARGETS[i]}"
-#     echo -e "  >=> ${GREEN}*${NC} ${BLUE}${endpoint}${NC}"
-#     echo -e "        ${CYAN}ψ${NC} $target"
 # done
 echo -e ""
 

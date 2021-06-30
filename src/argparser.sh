@@ -3,6 +3,9 @@
 ADDRESS='0.0.0.0'
 PORT='1337'
 
+PROXIES=()
+COMMANDS=()
+RESOURCES=()
 STATIC_FILES=()
 STATIC_DIRECTORIES=()
 
@@ -28,12 +31,6 @@ split_array() {
 }
 export -f split_array
 
-RESOURCE_ENDPOINTS=()
-RESOURCE_FILES=()
-FUNCTION_ENDPOINTS=()
-FUNCTION_FILES=()
-PROXY_ENDPOINTS=()
-PROXY_TARGETS=()
 
 while [ "$#" -gt 0 ]; do
 case "$1" in
@@ -56,23 +53,14 @@ case "$1" in
         target="$3"
         if [[ -d $target ]]; then
             endpoint="$(sed 's:/\?$:/:g' <<< "$endpoint")"
+            target="$(sed 's:/\?$:/:g' <<< "$target")"
             STATIC_DIRECTORIES+=("$(join_object "$endpoint" "$target")")
-            # STATIC_DIRECTORIES+=("$endpoint|$target")
         elif [[ -f $target ]]; then
             STATIC_FILES+=("$(join_object "$endpoint" "$target")")
-            # STATIC_FILES+=("$endpoint|$target")
         else
             echo -e "${RED}ERROR${NC}: '$target' is not a valid file or directory"
             exit 1
         fi
-        shift 3
-        ;;
-    # TODO: replace this
-    directory)
-        endpoint="$2"
-        directory="$3"
-        STATIC_DIRECTORY_ENDPOINTS+=("$endpoint")
-        STATIC_DIRECTORIES+=("$directory")
         shift 3
         ;;
     resource)
@@ -84,16 +72,14 @@ case "$1" in
         ;;
     command)
         endpoint="$2"
-        file="$3"
-        FUNCTION_ENDPOINTS+=("$endpoint")
-        FUNCTION_FILES+=("$file")
+        target="$3"
+        COMMANDS+=("$(join_object "$endpoint" "$target")")
         shift 3
         ;;
     proxy)
         endpoint="$2"
         target="$3"
-        PROXY_ENDPOINTS+=("$endpoint")
-        PROXY_TARGETS+=("$target")
+        PROXIES+=("$(join_object "$endpoint" "$target")")
         shift 3
         ;;
     *)
@@ -105,6 +91,8 @@ done
 
 declare -x SHIBA_STATIC_FILES="$(join_array "${STATIC_FILES[@]}")"
 declare -x SHIBA_STATIC_DIRECTORIES="$(join_array "${STATIC_DIRECTORIES[@]}")"
+declare -x SHIBA_PROXIES="$(join_array "${PROXIES[@]}")"
+declare -x SHIBA_COMMANDS="$(join_array "${COMMANDS[@]}")"
 
 # SHIBA_RESOURCE_ENDPOINTS=$(IFS='|'; echo "${RESOURCE_ENDPOINTS[*]}")
 # export SHIBA_RESOURCE_ENDPOINTS
