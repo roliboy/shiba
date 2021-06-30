@@ -15,6 +15,12 @@ printlog() {
             REQUEST_URI)
                 echo -ne "${BLUE}$value:${NC}\n"
                 ;;
+            REGEX_MATCH)
+                echo -ne "    ${GREEN}matched${NC} $value -> "
+                ;;
+            ENDPOINT_MATCH)
+                echo -ne "${YELLOW}$value${NC}\n"
+                ;;
             *)
                 ;;
         esac
@@ -60,3 +66,13 @@ log_response_header() {
     log "RESPONSE_HEADER $*"
 }
 export -f log_response_header
+
+log_endpoint_match() {
+    log "ENDPOINT_MATCH $*"
+}
+export -f log_endpoint_match
+
+log_regex_match() {
+    log "REGEX_MATCH $*"
+}
+export -f log_regex_match

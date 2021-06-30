@@ -6,12 +6,6 @@ PORT='1337'
 STATIC_FILES=()
 STATIC_DIRECTORIES=()
 
-# STATIC_ENDPOINTS=()
-# STATIC_FILES=()
-# STATIC_DIRECTORY_ENDPOINTS=()
-# STATIC_DIRECTORIES=()
-
-
 join_object() {
     first="$1"
     shift
@@ -33,7 +27,6 @@ split_array() {
     echo -n "${*//;;;/$'\n'}"
 }
 export -f split_array
-
 
 RESOURCE_ENDPOINTS=()
 RESOURCE_FILES=()
@@ -62,6 +55,7 @@ case "$1" in
         endpoint="$2"
         target="$3"
         if [[ -d $target ]]; then
+            endpoint="$(sed 's:/\?$:/:g' <<< "$endpoint")"
             STATIC_DIRECTORIES+=("$(join_object "$endpoint" "$target")")
             # STATIC_DIRECTORIES+=("$endpoint|$target")
         elif [[ -f $target ]]; then

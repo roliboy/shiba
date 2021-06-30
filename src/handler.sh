@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-# readenv() {
-#     declare -n values="$1"
-
-# }
-
 recv() {
     local data
     read -r data
@@ -66,18 +61,14 @@ handle_client() {
     done
 
     
+    # IFS='|' read -ra resource_endpoints <<< "$SHIBA_RESOURCE_ENDPOINTS"
+    # IFS='|' read -ra resource_files <<< "$SHIBA_RESOURCE_FILES"
+    # IFS='|' read -ra function_endpoints <<< "$SHIBA_FUNCTION_ENDPOINTS"
+    # IFS='|' read -ra function_targets <<< "$SHIBA_FUNCTION_TARGETS"
+    # IFS='|' read -ra proxy_endpoints <<< "$SHIBA_PROXY_ENDPOINTS"
+    # IFS='|' read -ra proxy_targets <<< "$SHIBA_PROXY_TARGETS"
 
-    IFS='|' read -ra resource_endpoints <<< "$SHIBA_RESOURCE_ENDPOINTS"
-    IFS='|' read -ra resource_files <<< "$SHIBA_RESOURCE_FILES"
-    IFS='|' read -ra static_endpoints <<< "$SHIBA_STATIC_ENDPOINTS"
-    IFS='|' read -ra static_files <<< "$SHIBA_STATIC_FILES"
-    IFS='|' read -ra static_directory_endpoints <<< "$SHIBA_STATIC_DIRECTORY_ENDPOINTS"
-    IFS='|' read -ra static_directories <<< "$SHIBA_STATIC_DIRECTORIES"
-    IFS='|' read -ra function_endpoints <<< "$SHIBA_FUNCTION_ENDPOINTS"
-    IFS='|' read -ra function_targets <<< "$SHIBA_FUNCTION_TARGETS"
-    IFS='|' read -ra proxy_endpoints <<< "$SHIBA_PROXY_ENDPOINTS"
-    IFS='|' read -ra proxy_targets <<< "$SHIBA_PROXY_TARGETS"
-
+    # TODO: something with this
     DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
     declare -a RESPONSE_HEADERS=(
         "Date: $DATE"
@@ -89,13 +80,47 @@ handle_client() {
     )
 
     while read -r entry; do
+        [[ -z $entry ]] && continue
         IFS=$'\n' read -rd '' endpoint file <<< "$(split_object "$entry")"
 
         regex="^${endpoint}$"
         if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            log_regex_match "$regex"
+            log_endpoint_match "$endpoint"
             handle_static_file "$file"
         fi
     done <<< "$(split_array "$SHIBA_STATIC_FILES")"
+
+    while read -r entry; do
+        [[ -z $entry ]] && continue
+        IFS=$'\n' read -rd '' endpoint directory <<< "$(split_object "$entry")"
+
+        regex="^${endpoint}(.*)$"
+        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            log_regex_match "$regex"
+            log_endpoint_match "$endpoint"
+            resource="${BASH_REMATCH[1]}"
+            handle_static_file "$directory$resource"
+        fi
+    done <<< "$(split_array "$SHIBA_STATIC_DIRECTORIES")"
+
+    # while read -r entry; do
+    #     IFS=$'\n' read -rd '' endpoint file <<< "$(split_object "$entry")"
+    #     endpoint="${function_endpoints[i]}"
+    #     command="${function_targets[i]}"
+
+    #     regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')/?$"
+
+    #     log "REGEX $regex"
+
+    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+    #         handle_command "$command" "${BASH_REMATCH[@]:1}"
+    #     fi
+    #     # if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+    #     #     resource="${BASH_REMATCH[1]}"
+    #     #     handle_static_file "$directory/$resource"
+    #     # fi
+    # done
 
 
     # for i in "${!resource_endpoints[@]}"; do
@@ -118,36 +143,6 @@ handle_client() {
     #     elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
     #         id="${BASH_REMATCH[1]}"
     #         handle_resource_destroy "$resource_file" "$id"
-    #     fi
-    # done
-
-    # # TODO: this block assumes endpoints have no trailing slashes
-    # for i in "${!function_endpoints[@]}"; do
-    #     endpoint="${function_endpoints[i]}"
-    #     command="${function_targets[i]}"
-
-    #     regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')/?$"
-
-    #     log "REGEX $regex"
-
-    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #         handle_command "$command" "${BASH_REMATCH[@]:1}"
-    #     fi
-    #     # if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #     #     resource="${BASH_REMATCH[1]}"
-    #     #     handle_static_file "$directory/$resource"
-    #     # fi
-    # done
-
-    # # TODO: this block assumes endpoints have no trailing slashes
-    # for i in "${!static_directory_endpoints[@]}"; do
-    #     endpoint="${static_directory_endpoints[i]}"
-    #     directory="${static_directories[i]}"
-
-    #     regex="^${endpoint}/(.*)$"
-    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #         resource="${BASH_REMATCH[1]}"
-    #         handle_static_file "$directory/$resource"
     #     fi
     # done
 

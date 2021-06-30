@@ -3,16 +3,30 @@
 # TODO: 404 if file does not exist
 handle_static_file() {
     file="$1"
-    RESPONSE_HEADERS+=("Content-Length: $(stat --printf='%s' "$file")")
-    RESPONSE_HEADERS+=("Content-Type: application/png")
-    
-    send "HTTP/1.0 200 OK"
-    for i in "${RESPONSE_HEADERS[@]}"; do
-        send "$i"
-    done
-    send
+    if [[ -f $file ]]; then    
+        RESPONSE_HEADERS+=("Content-Length: $(stat --printf='%s' "$file")")
+        RESPONSE_HEADERS+=("Content-Type: application/png")
+        
+        send "HTTP/1.0 200 OK"
+        for i in "${RESPONSE_HEADERS[@]}"; do
+            send "$i"
+        done
+        send
 
-    send_file "$file"
+        send_file "$file"
+    else
+        message="file not found"
+        RESPONSE_HEADERS+=("Content-Length: ${#message}")
+        RESPONSE_HEADERS+=("Content-Type: text/html")
+
+        send "HTTP/1.0 404 File not found"
+        for i in "${RESPONSE_HEADERS[@]}"; do
+            send "$i"
+        done
+        send
+
+        send "$message"
+    fi
 }
 export -f handle_static_file
 
