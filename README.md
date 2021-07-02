@@ -11,9 +11,9 @@
 <br />
 
 
-## About The Project
+## About The Project [WIP]
 
-Shiba is your all-in-one webapp prototyping companion. A versatile and easy-to-use tool that can act as a static http server, proxy, rest api and many more
+Shiba is your all-in-one webapp prototyping companion. A versatile and easy-to-use tool that can act as a static HTTP server, CORS proxy, REST API and more
 
 <!-- TL;DR of how it compares to other frameworks? -->
 <!-- shiba is intended to be used exclusively in the prototyping phase -->
@@ -21,7 +21,9 @@ Shiba is your all-in-one webapp prototyping companion. A versatile and easy-to-u
 <!-- developing a rest api backend in <insert language> for days vs spinning up some shiba resources in seconds; even if the project is doomed to fail you didn't spend time on implementing something that can be closely aproximated -->
 
 
-## Features & Usage
+## Features & Usage [WIP]
+
+<!-- TODO: more relevant example / full app -->
 
 - ### static
   ```plaintext
@@ -33,17 +35,15 @@ Shiba is your all-in-one webapp prototyping companion. A versatile and easy-to-u
 - ### proxy
   ```plaintext
   shiba proxy /api localhost:8080/api/v2
-  shiba proxy /api localhost:8080/api/v2
   ```
   Used for forwarding requests to a different server or endpoint and attaching CORS headers to responses
 
 - ### command
   ```plaintext
-  shiba command /wordcount 'wc -w'
+  shiba command /wordcount    'wc -w'
   shiba command /drop/{table} ./dropit
   ```
-  Used for executing commands and scripts. Path variables will be used as arguments and request body as stdin
-
+  Used for executing commands and scripts. Path variables will be used as arguments and the request body as standard input
 
 - ### resource
   ```plaintext
@@ -52,7 +52,7 @@ Shiba is your all-in-one webapp prototyping companion. A versatile and easy-to-u
   Used for creating a REST resource that supports CRUD operations
 
 ### putting everything together
-invoking shiba with the following arguments:
+invoking shiba with these arguments:
 ```plaintext
 shiba \
   static   /             index.html            \
@@ -65,21 +65,21 @@ shiba \
 will produce the following output:
 ![startup](images/startup.png)
 
-symbol explanation
-- `σ` (sigma): static file
+<!-- - `σ` (sigma): static file
 - `Σ` (uppercase sigma): static directory
 - `ψ` (psi): proxy
 - `λ` (lambda): command
-- `δ` (delta): resource
+- `δ` (delta): resource -->
 
 making a few requests to the generated endpoints
 
 ```bash
-http GET :1337/
-http GET :1337/media/main.sh
-http GET :1337/media/main.sd
-http GET :1337/wordcount <<< 'in hoc signo vinces'
-...
+http GET    :1337/media/logo.png
+http GET    :1337/media/shiba.png
+http GET    :1337/service/say-hello
+http GET    :1337/drop/users
+http POST   :1337/documents title="new document" pages:=256
+http DELETE :1337/documents/2
 ```
 
 will generate these logs:
@@ -89,40 +89,56 @@ will generate these logs:
 see `shiba --help` for more information
 
 
-## Installation & Prerequisites
+## Installation & Prerequisites [WIP]
 
-- [netcat](http://netcat.sourceforge.net)
+Shiba was written entirely in bash, so you will only need a copy of the source file to get up and running
+
+```bash
+# curl | bash like real chads
+curl -Ls roliboy.ml/shiba | bash -s static / index.html
+
+# or
+
+# assemble from source
+git clone git@github.com:roliboy/shiba.git
+cd shiba
+make
+./shiba static index.html
+```
+
+Depending on your system, there might be some missing command line utilities required by shiba, please check that the following are installed before running:
+- [netcat](http://netcat.sourceforge.net) - listening for incoming connections
 <!-- - [socat](http://www.dest-unreach.org/socat) -->
-- [jq](https://stedolan.github.io/jq)
+- [jq](https://stedolan.github.io/jq) - for processing JSON
 
 
-## Todos
+## Todos [WIP]
 
-- CORS headers
 - Token authentication
 - Sqlite backend
-- Entity relations :thinking_face:
-- Console for configuration
-  - serve directory: directory listing with `fzf`
+- Entity relations (maybe)
+- Configuration console
   - serve file: file listing with `fzf`
+  - serve directory: directory listing with `fzf`
   - executable: file listing with `fzf`
   - script: text editor
   - rest resource: ?
 - TLS support
   - `https://airman604.medium.com/simple-tls-listener-4e1cca7856b8`
-  -  `socat TCP4-LISTEN:8080,fork EXEC:/usr/local/bin/shiba`
+  - `socat TCP4-LISTEN:8080,fork EXEC:/usr/local/bin/shiba`
 
 
-## ~~Bugs~~ More Features
+## ~~Bugs~~ More Features [WIP]
+
 - `http GET :1337/dir/` matches `/dir/` and tries to retrieve a file with empty name
 
 
-## License
+## License [WIP]
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License, see `LICENSE` for more information
 
 
-## Contact
+## Contact [WIP]
 
 Nagy Roland - [roliboy.ml](https://roliboy.ml) - roliboy@protonmail.com
 
