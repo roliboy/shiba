@@ -161,4 +161,4 @@ export -f log_handler_resource_retrieve
 log_handler_resource_update() {
     log "RESOURCE_UPDATE $*"
 }
-export -f log_handler_resourcupdatete
+export -f log_handler_resource_update
