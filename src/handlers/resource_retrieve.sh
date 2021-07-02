@@ -17,5 +17,6 @@ handle_resource_retrieve() {
     send
 
     send "$element"
+    log_handler_resource_retrieve "$resource_id"
 }
 export -f handle_resource_retrieve

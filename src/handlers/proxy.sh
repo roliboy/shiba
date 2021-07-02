@@ -35,6 +35,7 @@ handle_proxy_response() {
     send
 
     head -c "$contentlength" /dev/stdin
+    log_handler_proxy_response "$contentlength" "$contenttype"
 }
 export -f handle_proxy_response
 

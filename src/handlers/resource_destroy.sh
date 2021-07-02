@@ -20,5 +20,6 @@ handle_resource_destroy() {
     send
 
     send "$element"
+    log_handler_resource_destroy "$resource_id"
 }
 export -f handle_resource_destroy

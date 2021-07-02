@@ -28,5 +28,6 @@ handle_resource_create() {
     send
 
     send "$element"
+    log_handler_resource_create "$id"
 }
 export -f handle_resource_create

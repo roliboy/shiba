@@ -36,9 +36,13 @@ fail() {
 }
 export -f fail
 
+# TODO: this
 parse_endpoints() {
     local -n array="$1"
-    while read -r entry; do
+    data="$(cat)"
+    log "DATA: $data"
+    local IFS=$'\n'
+    for entry in $(split_array "$data"); do
         [[ -z $entry ]] && continue
         array+=("$entry")
     done
@@ -95,7 +99,6 @@ handle_client() {
     parse_endpoints PROXIES <<< "$SHIBA_PROXIES"
     parse_endpoints RESOURCES <<< "$SHIBA_RESOURCES"
 
-
     # TODO: merge these two (generalize regex)
     for entry in "${STATIC_FILES[@]}"; do
         IFS=$'\n' read -rd '' endpoint file <<< "$(split_object "$entry")"
@@ -124,9 +127,14 @@ handle_client() {
         [[ -z $entry ]] && continue
         IFS=$'\n' read -rd '' endpoint command <<< "$(split_object "$entry")"
 
+        log "ENTRY $entry"
+        log "ENDPOINT $endpoint"
+        log "command $command"
+
         # TODO: match any request method and forward it to script
         # regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')/?$"
-        regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')$"
+        # regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')$"
+        regex="^$(echo "$endpoint" | sed 's|{[^}]*}|([^/]+)|g')$"
         if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
@@ -158,19 +166,28 @@ handle_client() {
 
         if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
             id="${BASH_REMATCH[1]}"
+            log_regex_match "$detail_regex"
+            log_endpoint_match "$endpoint"
             handle_resource_retrieve "$resource" "$id"
         elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            log_regex_match "$regex"
+            log_endpoint_match "$endpoint"
             handle_resource_list "$resource"
         elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            log_regex_match "$regex"
+            log_endpoint_match "$endpoint"
             handle_resource_create "$resource"
         elif [[ $REQUEST_METHOD == "PUT" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
             id="${BASH_REMATCH[1]}"
+            log_regex_match "$detail_regex"
+            log_endpoint_match "$endpoint"
             handle_resource_update "$resource" "$id"
         elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
             id="${BASH_REMATCH[1]}"
+            log_regex_match "$detail_regex"
+            log_endpoint_match "$endpoint"
             handle_resource_destroy "$resource" "$id"
         fi
     done
-
 }
 export -f handle_client

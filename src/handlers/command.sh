@@ -3,7 +3,14 @@
 # TODO: 404 if file does not exist
 handle_command() {
     command="$1"
-    stdin="$(cat)"
+
+    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
+    
+    IFS= read -d '@' -rn "$CONTENT_LENGTH" stdin
+    stdin=${stdin%%$'\r'}
+    log "STDIN: $stdin"
+    # stdin="$(</dev/stdin)"
+    # stdin="$(cat)"
     shift
 
     # TODO: make this less spaghett
@@ -47,5 +54,6 @@ handle_command() {
 
     # TODO: breaks when too many newlines in result
     send "$result"
+    log_handler_command_response "$command" "${arguments[*]}"
 }
 export -f handle_command

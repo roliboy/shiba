@@ -26,5 +26,6 @@ handle_resource_update() {
     send
 
     send "$element"
+    log_handler_resource_update "$resource_id"
 }
 export -f handle_resource_update

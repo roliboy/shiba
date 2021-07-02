@@ -29,6 +29,41 @@ printlog() {
                 echo -ne "    ${CYAN}code${NC} ${RED}404 Not Found${NC}\n"
                 echo -ne "    ${CYAN}file${NC} $value ${RED}not found${NC}\n"
                 ;;
+            PROXY_RESPONSE)
+                read -r contentlength contenttype <<< "$value"
+                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
+                echo -ne "    ${CYAN}proxy${NC} responded with ${GREEN}$contentlength${NC} bytes of $contenttype\n"
+                ;;
+            COMMAND_RESPONSE)            
+                read -r command arguments <<< "$value"
+                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
+                echo -ne "    ${CYAN}command${NC} ${MAGENTA}$command $arguments${NC} ran successfully\n"
+                ;;
+            RESOURCE_CREATE)
+                read -r id <<< "$value"
+                echo -ne "    ${CYAN}code${NC} ${GREEN}201 CREATED${NC}\n"
+                echo -ne "    ${CYAN}created${NC} resource with id ${GREEN}$id${NC}\n"
+                ;;
+            RESOURCE_DESTROY)
+                read -r id <<< "$value"
+                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
+                echo -ne "    ${CYAN}destroyed${NC} resource with id ${GREEN}$id${NC}\n"
+                ;;
+            RESOURCE_LIST)
+                read -r length <<< "$value"
+                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
+                echo -ne "    ${CYAN}listed${NC} ${GREEN}$length${NC} elements\n"
+                ;;
+            RESOURCE_RETRIEVE)
+                read -r id <<< "$value"
+                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
+                echo -ne "    ${CYAN}retrieved${NC} resource with id ${GREEN}$id${NC}\n"
+                ;;
+            RESOURCE_UPDATE)
+                read -r id <<< "$value"
+                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
+                echo -ne "    ${CYAN}updated${NC} resource with id ${GREEN}$id${NC}\n"
+                ;;
         esac
     done < /tmp/shibalog
 }
@@ -92,3 +127,38 @@ log_handler_static_file_not_found() {
     log "STATIC_FILE_NOT_FOUND $*"
 }
 export -f log_handler_static_file_not_found
+
+log_handler_proxy_response() {
+    log "PROXY_RESPONSE $*"
+}
+export -f log_handler_proxy_response
+
+log_handler_command_response() {
+    log "COMMAND_RESPONSE $*"
+}
+export -f log_handler_command_response
+
+log_handler_resource_create() {
+    log "RESOURCE_CREATE $*"
+}
+export -f log_handler_resource_create
+
+log_handler_resource_destroy() {
+    log "RESOURCE_DESTROY $*"
+}
+export -f log_handler_resource_destroy
+
+log_handler_resource_list() {
+    log "RESOURCE_LIST $*"
+}
+export -f log_handler_resource_list
+
+log_handler_resource_retrieve() {
+    log "RESOURCE_RETRIEVE $*"
+}
+export -f log_handler_resource_retrieve
+
+log_handler_resource_update() {
+    log "RESOURCE_UPDATE $*"
+}
+export -f log_handler_resourcupdatete

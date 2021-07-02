@@ -12,6 +12,9 @@ handle_resource_list() {
     done
     send
 
+    elements="$(jq length "$resource_file")"
+
     send_file "$resource_file"
+    log_handler_resource_list "$elements"
 }
 export -f handle_resource_list

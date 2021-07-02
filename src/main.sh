@@ -42,7 +42,7 @@ for entry in "${RESOURCES[@]}"; do
     IFS=$'\n' read -rd '' endpoint resource <<< "$(split_object "$entry")"
     echo -e "  >=> ${GREEN}GET/POST${NC} ${BLUE}${endpoint}${NC}"
     echo -e "        ${CYAN}δ${NC} $resource"
-    echo -e "  >=> ${GREEN}GET/PUT/DELETE${NC} ${BLUE}${endpoint}/<id>${NC}"
+    echo -e "  >=> ${GREEN}GET/PUT/DELETE${NC} ${BLUE}${endpoint}/{id}${NC}"
     echo -e "        ${CYAN}δ${NC} $resource"
 done
 echo -e ""
