@@ -11,9 +11,9 @@ stty -echoctl
 splash
 
 echo -e "shiba is listening"
-echo -e "  --> ${YELLOW}address${NC}: ${ADDRESS}"
-echo -e "  --> ${YELLOW}port${NC}: ${PORT}"
-echo -e "  --> ${YELLOW}ident${NC}: shiba/${VERSION}"
+echo -e "  --> ${YELLOW}address${NC}: ${SHIBA_ADDRESS}"
+echo -e "  --> ${YELLOW}port${NC}: ${SHIBA_PORT}"
+echo -e "  --> ${YELLOW}ident${NC}: shiba/${SHIBA_VERSION}"
 echo -e "  --> ${YELLOW}tls${NC}: disabled"
 echo -e "  --> ${YELLOW}log level${NC}: normal"
 echo -e "routes:"
@@ -39,7 +39,7 @@ for entry in "${COMMANDS[@]}"; do
     echo -e "        ${CYAN}λ${NC} $command"
 done
 for entry in "${RESOURCES[@]}"; do 
-    IFS=$'\n' read -rd '' endpoint resource <<< "$(split_object "$entry")"
+    IFS=$'\n' read -rd '' endpoint resource constraints <<< "$(split_object "$entry")"
     echo -e "  >=> ${GREEN}GET/POST${NC} ${BLUE}${endpoint}${NC}"
     echo -e "        ${CYAN}δ${NC} $resource"
     echo -e "  >=> ${GREEN}GET/PUT/DELETE${NC} ${BLUE}${endpoint}/{id}${NC}"

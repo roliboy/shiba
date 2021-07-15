@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-ADDRESS='0.0.0.0'
-PORT='1337'
+SHIBA_ADDRESS='0.0.0.0'
+SHIBA_PORT='1337'
 
 PROXIES=()
 COMMANDS=()
@@ -21,15 +21,23 @@ join_array() {
     printf "%s" "$first" "${@/#/;;;}"
 }
 
+join_list() {
+    first="$1"
+    shift
+    printf "%s" "$first" "${@/#/%%%}"
+}
+
 split_object() {
     echo -n "${*//@@@/$'\n'}"
 }
-export -f split_object
 
 split_array() {
     echo -n "${*//;;;/$'\n'}"
 }
-export -f split_array
+
+split_list() {
+    echo -n "${*//%%%/$'\n'}"
+}
 
 
 while [ "$#" -gt 0 ]; do
@@ -41,11 +49,11 @@ case "$1" in
         shift
         ;;
     -b|--bind)
-        ADDRESS="$2"
+        SHIBA_ADDRESS="$2"
         shift 2
         ;;
     -p|--port)
-        PORT="$2"
+        SHIBA_PORT="$2"
         shift 2
         ;;
     static|s)
@@ -63,11 +71,29 @@ case "$1" in
         fi
         shift 3
         ;;
+    # TODO:make this look not horrible
     resource|r)
         endpoint="$2"
         target="$3"
-        RESOURCES+=("$(join_object "$endpoint" "$target")")
+        model=()
+
         shift 3
+        if [[ $1 == '[' ]]; then
+            shift
+            while [[ $# -gt 0 ]] && [[ $1 != ']' ]]; do
+                if [[ $1 =~ ^([!%]?)([^:]+):?(.*)$ ]]; then
+                    modifier="${BASH_REMATCH[1]:-REQUIRED}"
+                    field="${BASH_REMATCH[2]}"
+                    type="${BASH_REMATCH[3]:-any}"
+#                     [[ $modifier == '!' ]] && modifier='REQUIRED'
+                    model+=("$modifier:$field:$type")
+                fi
+                shift
+            done
+            [[ $1 == ']' ]] && shift
+        fi
+
+        RESOURCES+=("$(join_object "$endpoint" "$target" "$(join_list "${model[@]}")")")
         ;;
     command|c)
         endpoint="$2"
@@ -88,8 +114,21 @@ case "$1" in
 esac
 done
 
-declare -x SHIBA_STATIC_FILES="$(join_array "${STATIC_FILES[@]}")"
-declare -x SHIBA_STATIC_DIRECTORIES="$(join_array "${STATIC_DIRECTORIES[@]}")"
-declare -x SHIBA_PROXIES="$(join_array "${PROXIES[@]}")"
-declare -x SHIBA_COMMANDS="$(join_array "${COMMANDS[@]}")"
-declare -x SHIBA_RESOURCES="$(join_array "${RESOURCES[@]}")"
+SHIBA_STATIC_FILES="$(join_array "${STATIC_FILES[@]}")"
+SHIBA_STATIC_DIRECTORIES="$(join_array "${STATIC_DIRECTORIES[@]}")"
+SHIBA_PROXIES="$(join_array "${PROXIES[@]}")"
+SHIBA_COMMANDS="$(join_array "${COMMANDS[@]}")"
+SHIBA_RESOURCES="$(join_array "${RESOURCES[@]}")"
+
+export SHIBA_ADDRESS
+export SHIBA_PORT
+
+export -f split_object
+export -f split_array
+export -f split_list
+
+export SHIBA_STATIC_FILES
+export SHIBA_STATIC_DIRECTORIES
+export SHIBA_PROXIES
+export SHIBA_COMMANDS
+export SHIBA_RESOURCES

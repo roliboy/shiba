@@ -2,7 +2,7 @@
 
 help() {
     echo -e "${YELLOW}shiba${NC} - the good boie rest api"
-    echo -e "    ${GREEN}version ${VERSION}${NC}"
+    echo -e "    ${GREEN}version ${SHIBA_VERSION}${NC}"
 
     echo -e "${BLUE}usage:${NC}"
     echo -e "    $0 [flags/options] [routes]"
