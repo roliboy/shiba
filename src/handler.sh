@@ -9,17 +9,11 @@ recv() {
 }
 export -f recv
 
-send() {
-    log_sent_data "$*"
-    echo -ne "$*\r\n"
+fail() {
+    echo "$1"
+    exit 1
 }
-export -f send
-
-send_file() {
-    log_sent_data "file $1"
-    cat "$1"
-}
-export -f send_file
+export -f fail
 
 trim() {
     local var="$*"
@@ -28,13 +22,6 @@ trim() {
     echo -n "$var"
 }
 export -f trim
-
-
-fail() {
-    echo "$1"
-    exit 1
-}
-export -f fail
 
 # TODO: this
 parse_endpoints() {
@@ -73,25 +60,8 @@ handle_client() {
         log_request_header "${header} => $value"
     done
 
-    # TODO: something with this
-    DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
-    declare -a RESPONSE_HEADERS=(
-        "Date: $DATE"
-        "Expires: $DATE"
-        "Server: shiba"
-        "Access-Control-Allow-Origin: *"
-        "Access-Control-Allow-Methods: OPTIONS, GET, POST, PUT, DELETE"
-        "Access-Control-Allow-Headers: *"
-    )
 
-    # # TODO: remove
-    # # TODO: skip when no content-length header is present
-    # CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
-    # # TODO: this
-    # IFS= read -d '@' -rn "$CONTENT_LENGTH" body
-    # body=${body%%$'\r'}
-    # log "BODY: $body"
-
+    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
 
     parse_endpoints STATIC_FILES <<< "$SHIBA_STATIC_FILES"
     parse_endpoints STATIC_DIRECTORIES <<< "$SHIBA_STATIC_DIRECTORIES"
@@ -99,12 +69,15 @@ handle_client() {
     parse_endpoints PROXIES <<< "$SHIBA_PROXIES"
     parse_endpoints RESOURCES <<< "$SHIBA_RESOURCES"
 
-    # TODO: merge these two (generalize regex)
     for entry in "${STATIC_FILES[@]}"; do
         IFS=$'\n' read -rd '' endpoint file <<< "$(split_object "$entry")"
 
         regex="^${endpoint}$"
-        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+        if [[ $REQUEST_URI =~ $regex ]]; then
+            if [[ $REQUEST_METHOD != GET ]]; then
+                send_response_method_not_allowed
+                return
+            fi
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
             handle_static_file "$file"
@@ -115,7 +88,11 @@ handle_client() {
         IFS=$'\n' read -rd '' endpoint directory <<< "$(split_object "$entry")"
 
         regex="^${endpoint}(.*)$"
-        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+        if [[ $REQUEST_URI =~ $regex ]]; then
+            if [[ $REQUEST_METHOD != GET ]]; then
+                send_response_method_not_allowed
+                return
+            fi
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
             resource="${BASH_REMATCH[1]}"
@@ -159,7 +136,7 @@ handle_client() {
     done
 
     for entry in "${RESOURCES[@]}"; do
-        IFS=$'\n' read -rd '' endpoint resource <<< "$(split_object "$entry")"
+        IFS=$'\n' read -rd '' endpoint resource model <<< "$(split_object "$entry")"
 
         regex="^${endpoint}/?$"
         detail_regex="^${endpoint}/([^/]+)/?$"
@@ -172,11 +149,11 @@ handle_client() {
         elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
-            handle_resource_list "$resource"
+            handle_resource_list
         elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
-            handle_resource_create "$resource"
+            handle_resource_create
         elif [[ $REQUEST_METHOD == "PUT" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
             id="${BASH_REMATCH[1]}"
             log_regex_match "$detail_regex"
