@@ -1,33 +1,45 @@
 #!/usr/bin/env bash
 
 handle_resource_create() {
-    resource_file="$1"
- 
-    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
+    if [[ -z $CONTENT_LENGTH ]]; then
+        send_response_length_required
+        return
+    fi
 
-    # head -c "$CONTENT_LENGTH" /dev/stdin
-    read -rn "$CONTENT_LENGTH" body
-    body=${body%%$'\r'}
-    log "BODY: $body"
+    body="$(head -c "$CONTENT_LENGTH" | jq -c 2>/dev/null)"
+    if [[ $? != 0 ]]; then
+        send_response_bad_request "could not parse request body"
+        return
+    fi
 
-    # TODO: rework this
-    data="$(cat "$resource_file")"
-    id="$(($(jq '.[-1].id' <<< "$data") + 1))"
-    element="$(jq -c ". + {id: $id}" <<< "$body")"
-    data="$(jq -c ". + [$element]" <<< "$data")"
+    errors=()
 
-    echo "$data" > "$resource_file"
-    
-    RESPONSE_HEADERS+=("Content-Length: ${#element}")
-    RESPONSE_HEADERS+=("Content-Type: application/json")
-    
-    send "HTTP/1.0 201 CREATED"
-    for i in "${RESPONSE_HEADERS[@]}"; do
-        send "$i"
+    for entry in $(split_list "$model"); do
+        IFS=':' read -r constraint field expected_type <<< "$entry"
+
+        if [[ $constraint == REQUIRED ]]; then
+            type="$(jq ".$field | type" <<< "$body" | tr -d '"')"
+            if [[ $type == null ]]; then
+                errors+=("$field attribute is required")
+            elif [[ $expected_type == any ]]; then
+                :
+            elif [[ $type != $expected_type ]]; then
+                errors+=("$field attribute expected $expected_type but got $type")
+            fi
+        fi
     done
-    send
 
-    send "$element"
+    if [[ ${#errors[@]} -gt 0 ]]; then
+        send_response_bad_request "model constraints not satisfied" "${errors[@]}"
+        return
+    fi
+
+    data="$(jq -c < "$resource")"
+    id="$(($(jq '[ .[] | .id ] | max' <<< "$data") + 1))"
+    element="$(jq -c ". + {id: $id}" <<< "$body")"
+    jq -c ". + [$element]" <<< "$data" > "$resource"
+
+    send_response_created "$element"
     log_handler_resource_create "$id"
 }
 export -f handle_resource_create
