@@ -49,20 +49,20 @@ handle_client() {
     log_request_uri "$REQUEST_URI"
 
     # TODO: name reference
-    declare -A REQUEST_HEADERS
+    declare -A _REQUEST_HEADERS
+    REQUEST_HEADERS=()
     while line="$(recv)"; do
         [ -z "$line" ] && break
+        REQUEST_HEADERS+=("$line")
         # TODO: method for parsing headers
         IFS=':' read -ra content <<< "$line"
         header="${content[0]}"
         value="$(trim "${content[1]}")"
-        REQUEST_HEADERS[$header]="$value"
+        _REQUEST_HEADERS[$header]="$value"
         log_request_header "${header} => $value"
     done
 
-
-
-    CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
+    CONTENT_LENGTH="${_REQUEST_HEADERS[Content-Length]}"
 
     DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
     RESPONSE_HEADERS=(
@@ -114,10 +114,6 @@ handle_client() {
     for entry in "${COMMANDS[@]}"; do
         IFS=$'\n' read -rd '' endpoint command <<< "$(split_object "$entry")"
 
-#         log "ENTRY $entry"
-#         log "ENDPOINT $endpoint"
-#         log "command $command"
-
         regex="^$(echo "$endpoint" | sed 's|{[^}]*}|([^/]+)|g')$"
         if [[ $REQUEST_URI =~ $regex ]]; then
             arguments=("${BASH_REMATCH[@]:1}")
@@ -132,14 +128,14 @@ handle_client() {
         IFS=$'\n' read -rd '' endpoint server <<< "$(split_object "$entry")"
 
         # TODO: something about the trailing slashes
-        regex="^${endpoint}(/.*)?$"
+        regex="^$endpoint(/.*)?$"
 
         # TODO: handle other methods
         if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
-            path="${BASH_REMATCH[1]}"
-            handle_proxy "$REQUEST_METHOD" "$server$path"
+            url="$server${BASH_REMATCH[1]:-/}"
+            handle_proxy
         fi
     done
 

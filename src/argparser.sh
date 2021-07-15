@@ -104,7 +104,7 @@ case "$1" in
     proxy|p)
         endpoint="$2"
         target="$3"
-        PROXIES+=("$(join_object "$endpoint" "$target")")
+        PROXIES+=("$(join_object "${endpoint%/}" "${target%/}")")
         shift 3
         ;;
     *)

@@ -31,13 +31,13 @@ handle_command() {
         fi
     fi
 
+    exit_code="$?"
 
 
     RESPONSE_HEADERS+=("Content-Length: ${#result}")
     # TODO: set content-type to application/json if the result is valid json?
     RESPONSE_HEADERS+=("Content-Type: text/plain")
 
-    exit_code="$?"
     if [[ $exit_code -eq 0 ]]; then
         send "HTTP/1.0 200 OK"
     else

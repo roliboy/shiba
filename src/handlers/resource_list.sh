@@ -5,10 +5,7 @@ handle_resource_list() {
     RESPONSE_HEADERS+=("Content-Type: application/json")
 
     send "HTTP/1.0 200 OK"
-    for i in "${RESPONSE_HEADERS[@]}"; do
-        send "$i"
-    done
-    send
+    send_headers
 
     elements="$(jq length "$resource")"
 
