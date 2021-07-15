@@ -1,0 +1,51 @@
+# unstructured data
+shiba resource /documents documents.json
+
+# has a default auto-incremented id field
+# accepts any fields and any data types
+
+
+
+# field declarations
+shiba resource /documents documents.json [
+        title
+        author
+        pages
+    ]
+
+# has a default auto-incremented id field
+# accepts only the declared fields, accepts any data types
+
+
+
+# field declarations with data type constraints
+shiba resource /documents documents.json [
+        title:text
+        author:text
+        pages:number
+    ]
+# has a default auto-incremented id field
+# accepts only the declared fields, and only if the data type is correct
+
+
+
+# required fields (not null constraint)
+shiba resource /documents documents.json [
+        !title:text
+        author:text
+        pages:number
+    ]
+# has a default auto-incremented id field
+# accepts only the declared fields, and only if the data type is correct
+# fails if title attribute is missing on create requests
+
+
+
+# id override
+shiba resource /documents documents.json [
+        *isbn:text
+        title:text
+        author:text
+        pages:number
+    ]
+# no default auto-incremented id field, uses the specified attribute instead
