@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SHIBA_VERSION='0.2'
+SHIBA_VERSION='0.3'
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
