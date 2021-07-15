@@ -87,6 +87,19 @@ send_response_method_not_allowed() {
 export -f send_response_method_not_allowed
 
 
+send_response_ok() {
+    response="$1"
+
+    RESPONSE_HEADERS+=("Content-Length: ${#response}")
+    RESPONSE_HEADERS+=("Content-Type: application/json")
+
+    send "HTTP/1.0 200 OK"
+    send_headers
+    send "$response"
+}
+export -f send_response_ok
+
+
 send_response_not_found() {
     response='{"status": "requested resource does not exist"}'
 
@@ -99,6 +112,18 @@ send_response_not_found() {
 }
 export -f send_response_not_found
 
+
+send_response_no_content() {
+    response="$1"
+
+    RESPONSE_HEADERS+=("Content-Length: ${#response}")
+    RESPONSE_HEADERS+=("Content-Type: application/json")
+
+    send "HTTP/1.0 204 No Content"
+    send_headers
+    send "$response"
+}
+export -f send_response_no_content
 
 send_response_created() {
     response="$1"

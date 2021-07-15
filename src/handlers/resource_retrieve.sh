@@ -1,22 +1,9 @@
 #!/usr/bin/env bash
 
 handle_resource_retrieve() {
-    resource_file="$1"
-    resource_id="$2"
+    element="$(jq -c ".[] | select(.id == $id)" < "$resource")"
 
-    data="$(cat "$resource_file")"
-    element="$(jq -c ".[] | select(.id == $resource_id)" <<< "$data")"
-
-    RESPONSE_HEADERS+=("Content-Length: ${#element}")
-    RESPONSE_HEADERS+=("Content-Type: application/json")
-    
-    send "HTTP/1.0 200 OK"
-    for i in "${RESPONSE_HEADERS[@]}"; do
-        send "$i"
-    done
-    send
-
-    send "$element"
-    log_handler_resource_retrieve "$resource_id"
+    send_response_ok "$element"
+    log_handler_resource_retrieve "$id"
 }
 export -f handle_resource_retrieve

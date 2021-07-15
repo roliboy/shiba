@@ -1,15 +1,7 @@
 #!/usr/bin/env bash
 
 handle_resource_list() {
-    RESPONSE_HEADERS+=("Content-Length: $(stat --printf='%s' "$resource")")
-    RESPONSE_HEADERS+=("Content-Type: application/json")
-
-    send "HTTP/1.0 200 OK"
-    send_headers
-
-    elements="$(jq length "$resource")"
-
-    send_file "$resource"
-    log_handler_resource_list "$elements"
+    send_response_file "$resource"
+    log_handler_resource_list "$(jq length "$resource")"
 }
 export -f handle_resource_list
