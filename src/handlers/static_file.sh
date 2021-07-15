@@ -2,10 +2,10 @@
 
 handle_static_file() {
     file="$1"
-    if [[ -f $file ]]; then    
+    if [[ -f $file ]]; then
         RESPONSE_HEADERS+=("Content-Length: $(stat --printf='%s' "$file")")
         RESPONSE_HEADERS+=("Content-Type: $(file -b --mime-type "$file")")
-        
+
         send "HTTP/1.0 200 OK"
         for i in "${RESPONSE_HEADERS[@]}"; do
             send "$i"

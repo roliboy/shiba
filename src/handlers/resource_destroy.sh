@@ -12,7 +12,7 @@ handle_resource_destroy() {
 
     RESPONSE_HEADERS+=("Content-Length: ${#element}")
     RESPONSE_HEADERS+=("Content-Type: application/json")
-    
+
     send "HTTP/1.0 200 OK"
     for i in "${RESPONSE_HEADERS[@]}"; do
         send "$i"

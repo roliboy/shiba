@@ -5,7 +5,7 @@ handle_command() {
     command="$1"
 
     CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
-    
+
     IFS= read -d '@' -rn "$CONTENT_LENGTH" stdin
     stdin=${stdin%%$'\r'}
     log "STDIN: $stdin"
@@ -24,7 +24,7 @@ handle_command() {
 
     arguments+=("$@")
 
-    
+
     log "COMMAND: $command"
     log "ARGUMENTS: ${arguments[*]}"
     log "STDIN $stdin"
@@ -45,7 +45,7 @@ handle_command() {
     RESPONSE_HEADERS+=("Content-Length: ${#result}")
     # TODO: set content-type to application/json if the result is valid json?
     RESPONSE_HEADERS+=("Content-Type: text/plain")
-    
+
     send "HTTP/1.0 200 OK"
     for i in "${RESPONSE_HEADERS[@]}"; do
         send "$i"
