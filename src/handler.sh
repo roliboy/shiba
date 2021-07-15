@@ -61,7 +61,18 @@ handle_client() {
     done
 
 
+
     CONTENT_LENGTH="${REQUEST_HEADERS[Content-Length]}"
+
+    DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
+    RESPONSE_HEADERS=(
+        "Date: $DATE"
+        "Expires: $DATE"
+        "Server: shiba"
+        "Access-Control-Allow-Origin: *"
+        "Access-Control-Allow-Methods: OPTIONS, GET, POST, PUT, DELETE"
+        "Access-Control-Allow-Headers: *"
+    )
 
     parse_endpoints STATIC_FILES <<< "$SHIBA_STATIC_FILES"
     parse_endpoints STATIC_DIRECTORIES <<< "$SHIBA_STATIC_DIRECTORIES"
@@ -80,42 +91,39 @@ handle_client() {
             fi
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
-            handle_static_file "$file"
+            handle_static_file
         fi
     done
 
     for entry in "${STATIC_DIRECTORIES[@]}"; do
         IFS=$'\n' read -rd '' endpoint directory <<< "$(split_object "$entry")"
 
-        regex="^${endpoint}(.*)$"
+        regex="^${endpoint}(.+)$"
         if [[ $REQUEST_URI =~ $regex ]]; then
             if [[ $REQUEST_METHOD != GET ]]; then
                 send_response_method_not_allowed
                 return
             fi
+            file="$directory${BASH_REMATCH[1]}"
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
-            resource="${BASH_REMATCH[1]}"
-            handle_static_file "$directory$resource"
+            handle_static_file
         fi
     done
 
     for entry in "${COMMANDS[@]}"; do
-        [[ -z $entry ]] && continue
         IFS=$'\n' read -rd '' endpoint command <<< "$(split_object "$entry")"
 
-        log "ENTRY $entry"
-        log "ENDPOINT $endpoint"
-        log "command $command"
+#         log "ENTRY $entry"
+#         log "ENDPOINT $endpoint"
+#         log "command $command"
 
-        # TODO: match any request method and forward it to script
-        # regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')/?$"
-        # regex="^$(echo "$endpoint" | sed 's|<[^>]*>|([^/]+)|g')$"
         regex="^$(echo "$endpoint" | sed 's|{[^}]*}|([^/]+)|g')$"
-        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+        if [[ $REQUEST_URI =~ $regex ]]; then
+            arguments=("${BASH_REMATCH[@]:1}")
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
-            handle_command "$command" "${BASH_REMATCH[@]:1}"
+            handle_command
         fi
     done
 

@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
-DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
-declare -a RESPONSE_HEADERS=(
-    "Date: $DATE"
-    "Expires: $DATE"
-    "Server: shiba"
-    "Access-Control-Allow-Origin: *"
-    "Access-Control-Allow-Methods: OPTIONS, GET, POST, PUT, DELETE"
-    "Access-Control-Allow-Headers: *"
-)
+# DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
+# declare -a RESPONSE_HEADERS=(
+#     "Date: $DATE"
+#     "Expires: $DATE"
+#     "Server: shiba"
+#     "Access-Control-Allow-Origin: *"
+#     "Access-Control-Allow-Methods: OPTIONS, GET, POST, PUT, DELETE"
+#     "Access-Control-Allow-Headers: *"
+# )
+# export RESPONSE_HEADERS
 
 send_response_string() {
     response="$1"
@@ -22,8 +23,16 @@ send_response_string() {
 }
 export -f send_response_string
 
+
 send_response_file() {
-    :
+    local file="$1"
+
+    RESPONSE_HEADERS+=("Content-Length: $(stat --printf='%s' "$file")")
+    RESPONSE_HEADERS+=("Content-Type: $(file -b --mime-type "$file")")
+
+    send "HTTP/1.0 200 OK"
+    send_headers
+    send_file "$file"
 }
 export -f send_response_file
 
@@ -75,6 +84,20 @@ send_response_method_not_allowed() {
     send_headers
     send "$response"
 }
+export -f send_response_method_not_allowed
+
+
+send_response_not_found() {
+    response='{"status": "requested resource does not exist"}'
+
+    RESPONSE_HEADERS+=("Content-Length: ${#response}")
+    RESPONSE_HEADERS+=("Content-Type: application/json")
+
+    send "HTTP/1.0 404 Not Found"
+    send_headers
+    send "$response"
+}
+export -f send_response_not_found
 
 
 send_response_created() {
