@@ -14,10 +14,12 @@ handle_resource_create() {
 
     errors=()
 
+#     TODO: make this look not horrible
+#     TODO: save only fields declared in the model
     for entry in $(split_list "$model"); do
         IFS=':' read -r constraint field expected_type <<< "$entry"
 
-        if [[ $constraint == REQUIRED ]]; then
+        if [[ $constraint == required ]]; then
             type="$(jq ".$field | type" <<< "$body" | tr -d '"')"
             if [[ $type == null ]]; then
                 errors+=("$field attribute is required")
@@ -26,6 +28,24 @@ handle_resource_create() {
             elif [[ $type != $expected_type ]]; then
                 errors+=("$field attribute expected $expected_type but got $type")
             fi
+        elif [[ $constraint == optional ]]; then
+            type="$(jq ".$field | type" <<< "$body" | tr -d '"')"
+            if [[ $type == null ]]; then
+                :
+            elif [[ $expected_type == any ]]; then
+                :
+            elif [[ $type != $expected_type ]]; then
+                errors+=("$field attribute expected $expected_type but got $type")
+            fi
+        elif [[ $constraint == key ]]; then
+            type="$(jq ".$field | type" <<< "$body" | tr -d '"')"
+            if [[ $type == null ]]; then
+                errors+=("$field attribute is required")
+            elif [[ $type != $expected_type ]]; then
+                errors+=("$field attribute expected $expected_type but got $type")
+            fi
+            key_field="$field"
+            key_value="$(jq ".$field" <<< "$body")"
         fi
     done
 
@@ -34,12 +54,21 @@ handle_resource_create() {
         return
     fi
 
-    data="$(jq -c < "$resource")"
-    id="$(($(jq '[ .[] | .id ] | max' <<< "$data") + 1))"
-    element="$(jq -c ". + {id: $id}" <<< "$body")"
-    jq -c ". + [$element]" <<< "$data" > "$resource"
+#     TODO: check for duplictes before adding
+    if [[ -n $key_field ]]; then
+        data="$(jq -c < "$resource")"
+        id="$key_value"
+        element="$body"
+        jq -c ". + [$element]" <<< "$data" > "$resource"
+    else
+        data="$(jq -c < "$resource")"
+        id="$(($(jq '[ .[] | .id ] | max' <<< "$data") + 1))"
+        element="$(jq -c ". + {id: $id}" <<< "$body")"
+        jq -c ". + [$element]" <<< "$data" > "$resource"
+    fi
 
     send_response_created "$element"
+#     TODO: log field name when using custom keys
     log_handler_resource_create "$id"
 }
 export -f handle_resource_create

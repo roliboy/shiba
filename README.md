@@ -117,6 +117,7 @@ Depending on your system, there might be some missing command line utilities req
 - Token authentication
 - Sqlite backend
 - Entity relations (maybe)
+- Allow spaces in resource field names
 - Configuration console
   - serve file: file listing with `fzf`
   - serve directory: directory listing with `fzf`
