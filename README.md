@@ -50,6 +50,7 @@ Shiba is your all-in-one webapp prototyping companion. A versatile and easy-to-u
   shiba resource /documents documents.json
   ```
   Used for creating a REST resource that supports CRUD operations
+  See [resource.md](examples/resource.md) for examples involving model definition, type constraints and id overriding
 
 ### putting everything together
 invoking shiba with these arguments:
