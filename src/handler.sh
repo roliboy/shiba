@@ -74,6 +74,11 @@ handle_client() {
         "Access-Control-Allow-Headers: *"
     )
 
+#     declare -A STATUS_CODES=(
+#         [200]="OK",
+#         [404]="Not Found"
+#     )
+
     parse_endpoints STATIC_FILES <<< "$SHIBA_STATIC_FILES"
     parse_endpoints STATIC_DIRECTORIES <<< "$SHIBA_STATIC_DIRECTORIES"
     parse_endpoints COMMANDS <<< "$SHIBA_COMMANDS"

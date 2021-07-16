@@ -13,8 +13,6 @@ assemble:
 	@echo '' >> shiba
 	@cat src/responders/* >> shiba
 	@echo '' >> shiba
-	@cat src/responder.sh >> shiba
-	@echo '' >> shiba
 	@cat src/handlers/* >> shiba
 	@echo '' >> shiba
 	@cat src/handler.sh >> shiba
