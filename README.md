@@ -115,6 +115,7 @@ Depending on your system, there might be some missing command line utilities req
 ## Todos [WIP]
 
 - Token authentication
+- Update --help
 - Sqlite backend
 - Entity relations (maybe)
 - Allow spaces in resource field names
@@ -147,5 +148,5 @@ Project Link: [https://github.com/roliboy/shiba](https://github.com/roliboy/shib
 
 
 ## Acknowledgements
-* [avleen's bashttp](https://github.com/avleen/bashttp)
+* [avleen's bashttpd](https://github.com/avleen/bashttpd)
 * [rocket](https://rocket.rs)

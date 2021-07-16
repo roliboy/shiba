@@ -30,7 +30,7 @@ export -f send_response_not_found
 
 # 405
 send_response_method_not_allowed() {
-    local content="{\"status\": \"method '$1' not allowed\"}"
+    local content="{\"status\": \"method $1 not allowed\"}"
     send_response_string "$STATUS_METHOD_NOT_ALLOWED" "application/json" "$content"
 }
 export -f send_response_method_not_allowed
