@@ -1,13 +1,30 @@
 #!/usr/bin/env bash
 
+# TODO: this
+parse_model() {
+    local -n array="$1"
+    data="$(cat)"
+    log "DATA: $data"
+    local IFS=$'\n'
+    for entry in $(split_list "$data"); do
+        [[ -z $entry ]] && continue
+        array+=("$entry")
+    done
+}
+export -f parse_model
+
 handle_resource_create() {
+    local resource="$1"
+    local model="$2"
+
+    echo "model: $model" >> /tmp/pog
+
     if [[ -z $CONTENT_LENGTH ]]; then
         send_response_length_required
         return
     fi
 
-    body="$(head -c "$CONTENT_LENGTH" | jq -c 2>/dev/null)"
-    if [[ $? != 0 ]]; then
+    if ! body="$(head -c "$CONTENT_LENGTH" | jq -c 2>/dev/null)"; then
         send_response_bad_request "could not parse request body"
         return
     fi
@@ -16,8 +33,15 @@ handle_resource_create() {
 
 #     TODO: make this look not horrible
 #     TODO: save only fields declared in the model
-    for entry in $(split_list "$model"); do
-        IFS=':' read -r constraint field expected_type <<< "$entry"
+    local IFS=$'\n'
+
+
+    parse_model resource_model <<< "$model"
+    for entry in "${resource_model[@]}"; do
+        # echo "entry: $entry" >> /tmp/pog
+        IFS=':' read -r constraint field expected_type default <<< "$entry"
+
+        # echo "default: $default" >> /tmp/pog
 
         if [[ $constraint == required ]]; then
             type="$(jq ".$field | type" <<< "$body" | tr -d '"')"
@@ -31,7 +55,11 @@ handle_resource_create() {
         elif [[ $constraint == optional ]]; then
             type="$(jq ".$field | type" <<< "$body" | tr -d '"')"
             if [[ $type == null ]]; then
-                :
+                if [[ $expected_type == string ]]; then
+                    body="$(jq -c ". + {$field: \"$default\"}" <<< "$body")"
+                elif [[ $expected_type == number ]]; then
+                    body="$(jq -c ". + {$field: $default}" <<< "$body")"
+                fi
             elif [[ $expected_type == any ]]; then
                 :
             elif [[ $type != $expected_type ]]; then

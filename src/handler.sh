@@ -162,7 +162,7 @@ handle_client() {
         elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
-            handle_resource_create
+            handle_resource_create "$resource" "$model"
         elif [[ $REQUEST_METHOD == "PUT" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
             id="${BASH_REMATCH[1]}"
             log_regex_match "$detail_regex"

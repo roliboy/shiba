@@ -81,14 +81,17 @@ case "$1" in
         if [[ $1 == '[' ]]; then
             shift
             while [[ $# -gt 0 ]] && [[ $1 != ']' ]]; do
-                if [[ $1 =~ ^([?*]?)([^:]+):?(.*)$ ]]; then
+                echo "arg: $1" >> /tmp/pog
+                if [[ $1 =~ ^([?*]?)([^:]+):?([^=]*)=?(.*)$ ]]; then
                     modifier="${BASH_REMATCH[1]:-required}"
                     field="${BASH_REMATCH[2]}"
                     type="${BASH_REMATCH[3]:-any}"
+                    default="${BASH_REMATCH[4]}"
+                    echo "field: $field default: $default" >> /tmp/pog
                     [[ $modifier == '?' ]] && modifier='optional'
 #                     TODO: check number or string
                     [[ $modifier == '*' ]] && modifier='key'
-                    model+=("$modifier:$field:$type")
+                    model+=("$modifier:$field:$type:$default")
                 fi
                 shift
             done

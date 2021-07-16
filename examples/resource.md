@@ -56,12 +56,11 @@ sending a POST request with the following JSON as payload: `{"title": "document 
 
 
 
-<!-- TODO: default value -->
 ## type-constrained optional fields
 ```
 shiba resource /documents documents.json [
         title:string
-        ?pages:number
+        ?author:string=unknown
     ]
 ```
 
@@ -69,7 +68,7 @@ has a default auto-incremented id field
 
 accepts any fields and any data types, fails if the optional field is provided but has the wrong data type
 
-sending a POST request with the following JSON as payload: `{"title": "document title", "pages": "245"}`, will fail with "pages attribute expected number but got string"
+sending a POST request with the following JSON as payload: `{"title": "document title", "author": 123}`, will fail with "author attribute expected string but got number"
 
 sending a request without the pages attribute will create the entity successfully
 
