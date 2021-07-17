@@ -64,7 +64,9 @@ shiba \
   resource /documents    documents.json 
 ```
 will produce the following output:
-![startup](images/startup.png)
+<div align="center">
+  <img src="images/startup.png">
+</div>
 
 <!-- - `σ` (sigma): static file
 - `Σ` (uppercase sigma): static directory
@@ -85,7 +87,9 @@ http DELETE :1337/documents/2
 
 will generate these logs:
 
-![logs](images/logs.png)
+<div align="center">
+  <img src="images/logs.png">
+</div>
 
 see `shiba --help` for more information
 
