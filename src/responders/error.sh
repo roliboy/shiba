@@ -3,28 +3,16 @@
 # TODO: clean this up
 # 400
 send_response_bad_request() {
-    local status="$1"
-    local content
-
-    shift
-    if [[ $# -gt 0 ]]; then
-        local errors=""
-        for error in "$@"; do
-            errors="$errors\"$error\","
-        done
-        content="{\"status\":\"$status\",\"errors\":[${errors::-1}]}"
-    else
-        content="{\"status\":\"$status\"}"
-    fi
-
-    send_response_string "$STATUS_BAD_REQUEST" "application/json" "$content"
+    local content="{\"status\":400,\"error\":\"Bad Request\",\"message\":\"$1\"}"
+    send_response_string "$STATUS_BAD_REQUEST" "$content" "application/json"
 }
 export -f send_response_bad_request
 
 # 404
 send_response_not_found() {
-    local content='{"status": "requested resource does not exist"}'
-    send_response_string "$STATUS_NOT_FOUND" "application/json" "$content"
+    # TODO: resource name in message
+    local content='{"status":404,"error":"Not Found","message":"requested resource does not exist"}'
+    send_response_string "$STATUS_NOT_FOUND" "$content" "application/json"
 }
 export -f send_response_not_found
 

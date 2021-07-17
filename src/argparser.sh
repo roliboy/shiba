@@ -117,7 +117,7 @@ case "$1" in
 
         if [[ ${#model[@]} -gt 0 ]]; then
             rm "$target" 2>/dev/null
-            sqlite3 "$target" "$(generate_schema "${model[@]}")"
+            sqlite3 "$target" "$(sql_schema "${model[@]}")"
         fi
 
         RESOURCES+=("$(join_object "$endpoint" "$target")")

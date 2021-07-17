@@ -153,11 +153,11 @@ handle_client() {
             id="${BASH_REMATCH[1]}"
             log_regex_match "$detail_regex"
             log_endpoint_match "$endpoint"
-            handle_resource_retrieve
+            handle_resource_retrieve "$resource"
         elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
-            handle_resource_list
+            handle_resource_list "$resource"
         elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
@@ -166,12 +166,12 @@ handle_client() {
             id="${BASH_REMATCH[1]}"
             log_regex_match "$detail_regex"
             log_endpoint_match "$endpoint"
-            handle_resource_update
+            handle_resource_update "$resource"
         elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
             id="${BASH_REMATCH[1]}"
             log_regex_match "$detail_regex"
             log_endpoint_match "$endpoint"
-            handle_resource_destroy
+            handle_resource_destroy "$resource"
         fi
     done
 }
