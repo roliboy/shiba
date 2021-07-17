@@ -121,10 +121,9 @@ handle_client() {
 
         regex="^$(echo "$endpoint" | sed 's|{[^}]*}|([^/]+)|g')$"
         if [[ $REQUEST_URI =~ $regex ]]; then
-            arguments=("${BASH_REMATCH[@]:1}")
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
-            handle_command
+            handle_command "$command" "${BASH_REMATCH[@]:1}"
         fi
     done
 
