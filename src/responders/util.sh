@@ -22,8 +22,8 @@ export -f send_headers
 
 send_response_string() {
     local status="$1"
-    local content_type="$2"
-    local response="$3"
+    local response="$2"
+    local content_type="$3"
 
     RESPONSE_HEADERS+=("Content-Length: ${#response}")
     RESPONSE_HEADERS+=("Content-Type: ${content_type}")

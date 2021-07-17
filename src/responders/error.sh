@@ -31,12 +31,20 @@ export -f send_response_not_found
 # 405
 send_response_method_not_allowed() {
     local content="{\"status\": \"method $1 not allowed\"}"
-    send_response_string "$STATUS_METHOD_NOT_ALLOWED" "application/json" "$content"
+    send_response_string "$STATUS_METHOD_NOT_ALLOWED" "$content" "application/json"
 }
 export -f send_response_method_not_allowed
 
 # 411
 send_response_length_required() {
     local content='{"status": "missing content-length header"}'
-    send_response_string "$STATUS_LENGTH_REQUIRED" "application/json" "$content"
+    send_response_string "$STATUS_LENGTH_REQUIRED" "$content" "application/json"
 }
+export -f send_response_length_required
+
+# 500
+send_response_internal_server_error() {
+    local content='{"status": "an error occured while proccessing the request"}'
+    send_response_string "$STATUS_INTERNAL_SERVER_ERROR" "$content" "application/json"
+}
+export -f send_response_internal_server_error
