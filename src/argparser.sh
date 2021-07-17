@@ -21,11 +21,6 @@ join_array() {
     printf "%s" "$first" "${@/#/;;;}"
 }
 
-join_list() {
-    first="$1"
-    shift
-    printf "%s" "$first" "${@/#/%%%}"
-}
 
 split_object() {
     echo -n "${*//@@@/$'\n'}"
@@ -35,9 +30,6 @@ split_array() {
     echo -n "${*//;;;/$'\n'}"
 }
 
-split_list() {
-    echo -n "${*//%%%/$'\n'}"
-}
 
 
 while [ "$#" -gt 0 ]; do
@@ -82,33 +74,53 @@ case "$1" in
         if [[ $1 == '[' ]]; then
             shift
             while [[ $# -gt 0 ]] && [[ $1 != ']' ]]; do
-                if [[ $1 =~ ^([?*]?)([^:=]+):?([^=]*)=?(.*)$ ]]; then
-                    modifier="${BASH_REMATCH[1]:-required}"
+                if [[ $1 =~ ^([*]?)([^:]+):([^=]+)=?(.*)$ ]]; then
+                    modifier="${BASH_REMATCH[1]}"
                     field="${BASH_REMATCH[2]}"
-                    type="${BASH_REMATCH[3]:-any}"
+                    type="${BASH_REMATCH[3]}"
                     default="${BASH_REMATCH[4]}"
-                    if [[ $modifier == '?' ]]; then
-                        if [[ -z $default ]]; then
-                            echo -e "${RED}ERROR${NC}: optional field '$field' should have a default value"
-                            exit 1
-                        fi
-                        modifier='optional'
-                    fi
+
+                    # TODO: json/list support
+                    case "$type" in
+                        text|string)
+                            type=text
+                            ;;
+                        integer|int)
+                            type=integer
+                            ;;
+                        real|double|float)
+                            type=real
+                            ;;
+                        *)
+                            error "invalid type $type"
+                            ;;
+                    esac                    
+
+                    
+
                     if [[ $modifier == '*' ]]; then
-                        if [[ $type != string ]] && [[ $type != number ]]; then
-                            echo -e "${RED}ERROR${NC}: key field '$field' should be number or string"
-                            exit 1
+                        modifier=key
+                    else
+                        if [[ -n $default ]]; then
+                            modifier=optional
+                        else
+                            modifier=required
                         fi
-                        modifier='key'
                     fi
-                    model+=("$modifier:$field:$type:$default")
+
+                    model+=("$field:$modifier:$type:$default")
                 fi
                 shift
             done
             [[ $1 == ']' ]] && shift
         fi
 
-        RESOURCES+=("$(join_object "$endpoint" "$target" "$(join_list "${model[@]}")")")
+        if [[ ${#model[@]} -gt 0 ]]; then
+            rm "$target" 2>/dev/null
+            sqlite3 "$target" "$(generate_schema "${model[@]}")"
+        fi
+
+        RESOURCES+=("$(join_object "$endpoint" "$target")")
         ;;
     command|c)
         endpoint="$2"
@@ -140,7 +152,6 @@ export SHIBA_PORT
 
 export -f split_object
 export -f split_array
-export -f split_list
 
 export SHIBA_STATIC_FILES
 export SHIBA_STATIC_DIRECTORIES

@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+error() {
+    echo -e "${RED}ERROR${NC}: $1"
+    exit "${2:-1}"
+}
+
+
 printlog() {
     while read -r line; do
         event="$(cut -d' ' -f1 <<< "$line")"
