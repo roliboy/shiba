@@ -77,20 +77,30 @@ case "$1" in
         target="$3"
         model=()
 
+        # ignore spaghett; will clean up eventually
         shift 3
         if [[ $1 == '[' ]]; then
             shift
             while [[ $# -gt 0 ]] && [[ $1 != ']' ]]; do
-                echo "arg: $1" >> /tmp/pog
-                if [[ $1 =~ ^([?*]?)([^:]+):?([^=]*)=?(.*)$ ]]; then
+                if [[ $1 =~ ^([?*]?)([^:=]+):?([^=]*)=?(.*)$ ]]; then
                     modifier="${BASH_REMATCH[1]:-required}"
                     field="${BASH_REMATCH[2]}"
                     type="${BASH_REMATCH[3]:-any}"
                     default="${BASH_REMATCH[4]}"
-                    echo "field: $field default: $default" >> /tmp/pog
-                    [[ $modifier == '?' ]] && modifier='optional'
-#                     TODO: check number or string
-                    [[ $modifier == '*' ]] && modifier='key'
+                    if [[ $modifier == '?' ]]; then
+                        if [[ -z $default ]]; then
+                            echo -e "${RED}ERROR${NC}: optional field '$field' should have a default value"
+                            exit 1
+                        fi
+                        modifier='optional'
+                    fi
+                    if [[ $modifier == '*' ]]; then
+                        if [[ $type != string ]] && [[ $type != number ]]; then
+                            echo -e "${RED}ERROR${NC}: key field '$field' should be number or string"
+                            exit 1
+                        fi
+                        modifier='key'
+                    fi
                     model+=("$modifier:$field:$type:$default")
                 fi
                 shift
