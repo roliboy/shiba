@@ -171,7 +171,7 @@ handle_client() {
             id="${BASH_REMATCH[1]}"
             log_regex_match "$detail_regex"
             log_endpoint_match "$endpoint"
-            handle_resource_destroy "$resource"
+            handle_resource_destroy "$resource" "$id"
         fi
     done
 }

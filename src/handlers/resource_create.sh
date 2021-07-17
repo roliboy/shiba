@@ -24,7 +24,7 @@ handle_resource_create() {
     object="${object#?}"
     object="${object%?}"
 
-    echo "$object" >> /tmp/pog
+    # echo "$object" >> /tmp/pog
 
     if [[ $status -ne 0 ]]; then
         local error
