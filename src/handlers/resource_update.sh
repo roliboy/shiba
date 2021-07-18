@@ -1,16 +1,43 @@
 #!/usr/bin/env bash
 
 handle_resource_update() {
+    local resource="$1"
+    local id="$2"
+
     if [[ -z $CONTENT_LENGTH ]]; then
         send_response_length_required
         return
     fi
 
-    body="$(head -c "$CONTENT_LENGTH" | jq -c 2>/dev/null)"
-    if [[ $? != 0 ]]; then
+    if ! body="$(head -c "$CONTENT_LENGTH" | jq -c 2>/dev/null)"; then
         send_response_bad_request "could not parse request body"
         return
     fi
+
+    local statement
+    statement="$(sql_update_statement "$resource" "$id" "$body")"
+
+    echo "st: $statement" >> /tmp/pog
+
+    local object
+    object="$(sqlite3 "$resource" ".mode json" "$statement" 2>/tmp/shibaerr)"
+
+
+    local status="$?"
+
+    object="${object#?}"
+    object="${object%?}"
+
+    echo "ob: $object" >> /tmp/pog
+
+    if [[ $status -ne 0 ]]; then
+        local error
+        error="$(cat /tmp/shibaerr)"
+        send_response_bad_request "${error#Error: }"
+    fi
+
+    send_response_ok "$object"
+    log_handler_resource_update "$id"
 
 #     TODO: these
 #     errors=()
@@ -42,12 +69,9 @@ handle_resource_update() {
 #
 #     send_response_created "$element"
 
-    element="$(jq -c ". + {id: $id}" <<< "$body")"
-    data="$(jq -c "[ .[] | select(.id == $id) = $element ]" < "$resource")"
+    # element="$(jq -c ". + {id: $id}" <<< "$body")"
+    # data="$(jq -c "[ .[] | select(.id == $id) = $element ]" < "$resource")"
 
-    echo "$data" > "$resource"
-
-    send_response_ok "$element"
-    log_handler_resource_update "$id"
+    # echo "$data" > "$resource"
 }
 export -f handle_resource_update

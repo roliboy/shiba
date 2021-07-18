@@ -40,23 +40,23 @@ sql_create_statement() {
     local schema
 
     schema="$(sqlite3 "$resource" ".schema model" | grep -oP '\(\K.*(?=\))')"
-    
+    # TODO: replace select with values
     while read -r line; do
         if [[ $line =~ ^\'(.+)\'.*$ ]]; then
             fields+=("${BASH_REMATCH[1]}")
         fi
     done <<< "${schema//, /$'\n'}"
 
-    printf -v data_fields "'%s', " "${fields[@]}"
+    printf -v data_fields "\"%s\", " "${fields[@]}"
     statement="insert into model ("
     statement="$statement${data_fields%??}"
-    statement="$statement) select"
+    statement="$statement) values ("
 
     for field in "${fields[@]}"; do
-        statement="$statement json_extract('$blob', '\$.$field'),"
+        statement="${statement}json_extract('$blob', '\$.$field'), "
     done
 
-    statement="${statement%?} returning *;"
+    statement="${statement%??}) returning *;"
 
     echo "$statement"
 }
@@ -124,3 +124,43 @@ sql_retrieve_statement() {
     echo "$statement"
 }
 export -f sql_retrieve_statement
+
+sql_update_statement() {
+    local resource="$1"
+    local id="$2"
+    local blob="$3"
+    local fields=()
+    local schema
+
+    schema="$(sqlite3 "$resource" ".schema model" | grep -oP '\(\K.*(?=\))')"
+    
+    local key_field
+    local key_type
+    
+    while read -r line; do
+        if [[ $line =~ ^\'(.+)\'.*$ ]]; then
+            fields+=("${BASH_REMATCH[1]}")
+        fi
+        if [[ $line =~ ^\'(.+)\'[[:space:]]([^ ]+)[[:space:]]primary[[:space:]]key$ ]]; then
+            key_field="${BASH_REMATCH[1]}"
+            key_type="${BASH_REMATCH[2]}"
+        fi
+    done <<< "${schema//, /$'\n'}"
+
+    statement="update model set"
+
+    for field in "${fields[@]}"; do
+        statement="$statement '$field' = coalesce(json_extract('$blob', '\$.$field'), \"$field\"),"
+    done
+
+    if [[ $key_type = text ]]; then
+        statement="${statement%?} where \"$key_field\" = '$id'"
+    else
+        statement="${statement%?} where \"$key_field\" = $id"
+    fi
+    
+    statement="$statement returning *;"
+
+    echo "$statement"
+}
+export -f sql_update_statement

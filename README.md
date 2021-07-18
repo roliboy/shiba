@@ -115,10 +115,11 @@ Depending on your system, there might be some missing command line utilities req
 - [netcat](http://netcat.sourceforge.net) - listening for incoming connections
 <!-- - [socat](http://www.dest-unreach.org/socat) -->
 - [jq](https://stedolan.github.io/jq) - for processing JSON
-
+- [sqlite3](https://github.com/sqlite/sqlite) - for data storage
 
 ## Todos [WIP]
 
+- Disallow null keys when using custom key field
 - Token authentication
 - Update --help
 - Sqlite backend
@@ -153,5 +154,6 @@ Project Link: [https://github.com/roliboy/shiba](https://github.com/roliboy/shib
 
 
 ## Acknowledgements
-* [avleen's bashttpd](https://github.com/avleen/bashttpd)
-* [rocket](https://rocket.rs)
+* [avleen's bashttpd](https://github.com/avleen/bashttpd) - for the idea
+* [rust's rocket framework](https://rocket.rs) - for the cli logging
+* [regex101](https://regex101.com/) - for preserving my sanity while writing regular expressions

@@ -16,6 +16,8 @@ handle_resource_create() {
     local statement
     statement="$(sql_create_statement "$resource" "$body")"
 
+    echo "CREATE STATEMENT: $statement" >> /tmp/pog
+
     local object
     object="$(sqlite3 "$resource" ".mode json" "$statement" 2>/tmp/shibaerr)"
 

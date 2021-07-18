@@ -166,7 +166,7 @@ handle_client() {
             id="${BASH_REMATCH[1]}"
             log_regex_match "$detail_regex"
             log_endpoint_match "$endpoint"
-            handle_resource_update "$resource"
+            handle_resource_update "$resource" "${id//%20/ }"
         elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
             id="${BASH_REMATCH[1]}"
             log_regex_match "$detail_regex"
