@@ -11,6 +11,7 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
+WHITE='\033[0;37m'
 NC='\033[0m'
 
 export RED
@@ -19,6 +20,7 @@ export YELLOW
 export BLUE
 export MAGENTA
 export CYAN
+export WHITE
 export NC
 
 

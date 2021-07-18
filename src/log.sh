@@ -5,7 +5,6 @@ error() {
     exit "${2:-1}"
 }
 
-
 printlog() {
     while read -r line; do
         event="$(cut -d' ' -f1 <<< "$line")"
@@ -22,7 +21,8 @@ printlog() {
                 echo -ne "${BLUE}$value:${NC}\n"
                 ;;
             REGEX_MATCH)
-                echo -ne "    ${CYAN}matched${NC} $value -> "
+                echo -ne "    ${CYAN}matched${NC}\n"
+                echo -ne "        $value -> "
                 ;;
             ENDPOINT_MATCH)
                 echo -ne "${YELLOW}$value${NC}\n"
@@ -69,6 +69,13 @@ printlog() {
                 read -r id <<< "$value"
                 echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
                 echo -ne "    ${CYAN}updated${NC} resource with id ${GREEN}$id${NC}\n"
+                ;;
+            SQL_QUERY)
+                [[ $SHIBA_LOG_QUERIES = true ]] || continue
+                echo -ne "    ${CYAN}sql query${NC}\n"
+                while IFS= read -r line; do
+                    echo -ne "        $line\n"
+                done <<< "$(sql_syntax_highlight "$value")"
                 ;;
         esac
     done < /tmp/shibalog

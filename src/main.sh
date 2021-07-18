@@ -15,7 +15,10 @@ echo -e "  --> ${YELLOW}address${NC}: ${SHIBA_ADDRESS}"
 echo -e "  --> ${YELLOW}port${NC}: ${SHIBA_PORT}"
 echo -e "  --> ${YELLOW}ident${NC}: shiba/${SHIBA_VERSION}"
 echo -e "  --> ${YELLOW}tls${NC}: disabled"
-echo -e "  --> ${YELLOW}log level${NC}: normal"
+logs="${YELLOW}logs${NC}: "
+[[ ayy != lmao ]] && logs="${logs}basic, "
+[[ $SHIBA_LOG_QUERIES = true ]] && logs="${logs}sql queries, "
+echo -e "  --> ${logs%??}"
 echo -e "routes:"
 
 for entry in "${STATIC_FILES[@]}"; do
