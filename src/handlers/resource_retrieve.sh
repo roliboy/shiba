@@ -7,7 +7,7 @@ handle_resource_retrieve() {
     local statement
     statement="$(sql_retrieve_statement "$resource" "$id")"
 
-    echo "st: $statement" >> /tmp/pog
+    log "SQL_QUERY" "$statement"
 
     local object
     object="$(sqlite3 "$resource" ".mode json" "$statement" 2>/tmp/shibaerr)"

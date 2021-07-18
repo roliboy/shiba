@@ -18,8 +18,6 @@ handle_resource_create() {
 
     log "SQL_QUERY" "$statement"
 
-    # echo "CREATE STATEMENT: $statement" >> /tmp/pog
-
     local object
     object="$(sqlite3 "$resource" ".mode json" "$statement" 2>/tmp/shibaerr)"
 

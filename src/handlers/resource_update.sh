@@ -17,7 +17,7 @@ handle_resource_update() {
     local statement
     statement="$(sql_update_statement "$resource" "$id" "$body")"
 
-    echo "st: $statement" >> /tmp/pog
+    log "SQL_QUERY" "$statement"
 
     local object
     object="$(sqlite3 "$resource" ".mode json" "$statement" 2>/tmp/shibaerr)"

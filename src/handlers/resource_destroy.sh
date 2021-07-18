@@ -7,12 +7,11 @@ handle_resource_destroy() {
     local statement
     statement="$(sql_destroy_statement "$resource" "$id")"
 
-    echo "st: $statement" >> /tmp/pog
+    log "SQL_QUERY" "$statement"
 
     local object
     object="$(sqlite3 "$resource" ".mode json" "$statement" 2>/tmp/shibaerr)"
 
-    echo "ob: $object" >> /tmp/pog
 
     local status="$?"
 

@@ -7,6 +7,8 @@ handle_resource_list() {
     # statement="$(sql_list_statement "$resource")"
     statement="$(sql_list_statement)"
 
+    log "SQL_QUERY" "$statement"
+
     # TODO: pipe directly?
     local objects
     objects="$(sqlite3 "$resource" ".mode json" "$statement" 2>/tmp/shibaerr)"

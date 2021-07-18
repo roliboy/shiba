@@ -72,6 +72,9 @@ printlog() {
                 ;;
             SQL_QUERY)
                 [[ $SHIBA_LOG_QUERIES = true ]] || continue
+
+                echo "$value"
+                
                 echo -ne "    ${CYAN}sql query${NC}\n"
                 while IFS= read -r line; do
                     echo -ne "        $line\n"
