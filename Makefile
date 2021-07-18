@@ -13,6 +13,8 @@ assemble:
 	@echo '' >> shiba
 	@cat src/argparser.sh >> shiba
 	@echo '' >> shiba
+	@cat src/io.sh >> shiba
+	@echo '' >> shiba
 	@cat src/responders/* >> shiba
 	@echo '' >> shiba
 	@cat src/handlers/* >> shiba

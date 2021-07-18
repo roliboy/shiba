@@ -1,20 +1,5 @@
 #!/usr/bin/env bash
 
-recv() {
-    local data
-    read -r data
-    data=${data%%$'\r'}
-    log_received_data "$data"
-    echo -n "$data"
-}
-export -f recv
-
-fail() {
-    echo "$1"
-    exit 1
-}
-export -f fail
-
 trim() {
     local var="$*"
     var="${var#"${var%%[![:space:]]*}"}"
@@ -41,12 +26,21 @@ handle_client() {
     startlog
 
     read -r REQUEST_METHOD REQUEST_URI REQUEST_HTTP_VERSION <<< "$(recv)"
-    [[ -n $REQUEST_METHOD ]] || fail 400
-    [[ -n $REQUEST_URI ]] || fail 400
-    [[ -n $REQUEST_HTTP_VERSION ]] || fail 400
+    if [[ -z $REQUEST_METHOD ]]; then
+        send_response_bad_request "no request method in http request header"
+        exit
+    fi
+    if [[ -z $REQUEST_URI ]]; then
+        send_response_bad_request "no uri in http request header"
+        exit
+    fi
+    if [[ -z $REQUEST_HTTP_VERSION ]]; then
+        send_response_bad_request "no http version in http request header"
+        exit
+    fi
 
-    log_request_method "$REQUEST_METHOD"
-    log_request_uri "$REQUEST_URI"
+    log "REQUEST_METHOD" "$REQUEST_METHOD"
+    log "REQUEST_URI" "$REQUEST_URI"
 
     # TODO: name reference
     declare -A _REQUEST_HEADERS
@@ -91,7 +85,7 @@ handle_client() {
         regex="^${endpoint}$"
         if [[ $REQUEST_URI =~ $regex ]]; then
             if [[ $REQUEST_METHOD != GET ]]; then
-                send_response_method_not_allowed
+                send_response_method_not_allowed "$REQUEST_METHOD"
                 return
             fi
             log_regex_match "$regex"
@@ -106,7 +100,7 @@ handle_client() {
         regex="^${endpoint}(.+)$"
         if [[ $REQUEST_URI =~ $regex ]]; then
             if [[ $REQUEST_METHOD != GET ]]; then
-                send_response_method_not_allowed
+                send_response_method_not_allowed "$REQUEST_METHOD"
                 return
             fi
             file="$directory${BASH_REMATCH[1]}"
@@ -149,28 +143,29 @@ handle_client() {
         regex="^${endpoint}/?$"
         detail_regex="^${endpoint}/([^/]+)/?$"
 
+        # TODO: replace id with custom key field name if present
         if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
             id="${BASH_REMATCH[1]}"
-            log_regex_match "$detail_regex"
-            log_endpoint_match "$endpoint"
+            log "ENDPOINT_MATCH_REGEX" "$detail_regex"
+            log "ENDPOINT_MATCH" "$endpoint/{id}"
             handle_resource_retrieve "$resource" "${id//%20/ }"
         elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-            log_regex_match "$regex"
-            log_endpoint_match "$endpoint"
+            log "ENDPOINT_MATCH_REGEX" "$regex"
+            log "ENDPOINT_MATCH" "$endpoint"
             handle_resource_list "$resource"
         elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-            log_regex_match "$regex"
-            log_endpoint_match "$endpoint"
+            log "ENDPOINT_MATCH_REGEX" "$regex"
+            log "ENDPOINT_MATCH" "$endpoint"
             handle_resource_create "$resource"
         elif [[ $REQUEST_METHOD == "PUT" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
             id="${BASH_REMATCH[1]}"
-            log_regex_match "$detail_regex"
-            log_endpoint_match "$endpoint"
+            log "ENDPOINT_MATCH_REGEX" "$detail_regex"
+            log "ENDPOINT_MATCH" "$endpoint/{id}"
             handle_resource_update "$resource" "${id//%20/ }"
         elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
             id="${BASH_REMATCH[1]}"
-            log_regex_match "$detail_regex"
-            log_endpoint_match "$endpoint"
+            log "ENDPOINT_MATCH_REGEX" "$detail_regex"
+            log "ENDPOINT_MATCH" "$endpoint/{id}"
             handle_resource_destroy "$resource" "${id//%20/ }"
         fi
     done
