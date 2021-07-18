@@ -164,3 +164,50 @@ sql_update_statement() {
     echo "$statement"
 }
 export -f sql_update_statement
+
+sql_syntax_highlight() {
+    local query="$1"
+    # local regex='(insert|into|values|model|json_extract|returning|\*|\(|\)|,|"[^"]*"|'\''[^'\'']*'\'')'
+    local methods="json_extract"
+    local punctuation='\(|\)|,|\*'
+    local keywords='insert|into|model|values|returning'
+    local json_literal="'\{[^']*'"
+    local string_literal="'[^']*'"
+    local column_name='"[^"]*"'
+    local regex="$keywords|$punctuation|$methods|$json_literal|$string_literal|$column_name"
+
+    local highlighted
+
+    while read -r token; do
+        # echo "token: $token" >> /tmp/pog
+        if [[ $token =~ $keywords ]]; then
+            if [[ $token = values || $token = returning ]]; then
+                highlighted+="\n${MAGENTA}$token${NC} "
+            else
+                highlighted+="${MAGENTA}$token${NC} "
+            fi
+        elif [[ $token =~ $methods ]]; then
+            if [[ $token = json_extract ]]; then
+                highlighted+="\n    ${CYAN}$token${NC}"
+            else
+                highlighted+="${CYAN}$token${NC}"
+            fi
+        elif [[ $token =~ $json_literal ]]; then
+            highlighted+="${WHITE}$token${NC} "
+        elif [[ $token =~ $string_literal ]]; then
+            highlighted+="${YELLOW}$token${NC} "
+        elif [[ $token =~ $column_name ]]; then
+            highlighted+="${GREEN}$token${NC} "
+        elif [[ $token =~ $punctuation ]]; then
+            if [[ $token = ')' ]]; then
+                highlighted="${highlighted% }${WHITE}$token${NC}"
+            elif [[ $token = ',' ]]; then
+                highlighted="${highlighted% }${WHITE}$token${NC} "
+            else
+                highlighted+="${WHITE}$token${NC}"
+            fi
+        fi
+    done <<< "$(grep -oP "$regex" <<< "$query")"
+
+    echo -ne "$highlighted"
+}
