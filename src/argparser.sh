@@ -2,7 +2,8 @@
 
 SHIBA_ADDRESS='0.0.0.0'
 SHIBA_PORT='1337'
-SHIBA_LOG_QUERIES=false
+SHIBA_LOG_ENDPOINT_MATCH=true
+SHIBA_LOG_SQL_QUERY=false
 
 PROXIES=()
 COMMANDS=()
@@ -41,8 +42,12 @@ case "$1" in
         exit 0
         shift
         ;;
-    -q|--log-queries)
-        SHIBA_LOG_QUERIES=true
+    -q|--log-sql-query)
+        SHIBA_LOG_SQL_QUERY=true
+        shift
+        ;;
+    -e|--log-endpoint-match)
+        SHIBA_LOG_ENDPOINT_MATCH=true
         shift
         ;;
     -b|--bind)
@@ -154,7 +159,8 @@ SHIBA_RESOURCES="$(join_array "${RESOURCES[@]}")"
 
 export SHIBA_ADDRESS
 export SHIBA_PORT
-export SHIBA_LOG_QUERIES
+export SHIBA_LOG_SQL_QUERY
+export SHIBA_LOG_ENDPOINT_MATCH
 
 export -f split_object
 export -f split_array

@@ -14,19 +14,26 @@ printlog() {
                 ;;
             SENT)
                 ;;
+
+            # SHIBA_LOG_REQUEST
             REQUEST_METHOD)
                 echo -ne "${GREEN}$value${NC} "
                 ;;
             REQUEST_URI)
                 echo -ne "${BLUE}$value:${NC}\n"
                 ;;
-            REGEX_MATCH)
+
+            # SHIBA_LOG_ENDPOINT_MATCH
+            ENDPOINT_MATCH_REGEX)
+                [[ $SHIBA_LOG_ENDPOINT_MATCH = true ]] || continue
                 echo -ne "    ${CYAN}matched${NC}\n"
                 echo -ne "        $value -> "
                 ;;
             ENDPOINT_MATCH)
+                [[ $SHIBA_LOG_ENDPOINT_MATCH = true ]] || continue
                 echo -ne "${YELLOW}$value${NC}\n"
                 ;;
+
             STATIC_FILE_SENT)
                 echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
                 echo -ne "    ${CYAN}file${NC} $value ${GREEN}sent${NC}\n"
@@ -70,11 +77,10 @@ printlog() {
                 echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
                 echo -ne "    ${CYAN}updated${NC} resource with id ${GREEN}$id${NC}\n"
                 ;;
+            
+            # SHIBA_LOG_SQL_QUERY
             SQL_QUERY)
-                [[ $SHIBA_LOG_QUERIES = true ]] || continue
-
-                echo "$value"
-                
+                [[ $SHIBA_LOG_SQL_QUERY = true ]] || continue
                 echo -ne "    ${CYAN}sql query${NC}\n"
                 while IFS= read -r line; do
                     echo -ne "        $line\n"
@@ -93,88 +99,3 @@ log() {
     echo "$*" >> /tmp/shibalog
 }
 export -f log
-
-log_received_data() {
-    log "RECEIVED $*"
-}
-export -f log_received_data
-
-log_sent_data() {
-    log "SENT $*"
-}
-export -f log_sent_data
-
-log_request_method() {
-    log "REQUEST_METHOD $*"
-}
-export -f log_request_method
-
-log_request_uri() {
-    log "REQUEST_URI $*"
-}
-export -f log_request_uri
-
-log_request_header() {
-    log "REQUEST_HEADER $*"
-}
-export -f log_request_header
-
-log_response_header() {
-    log "RESPONSE_HEADER $*"
-}
-export -f log_response_header
-
-log_endpoint_match() {
-    log "ENDPOINT_MATCH $*"
-}
-export -f log_endpoint_match
-
-log_regex_match() {
-    log "REGEX_MATCH $*"
-}
-export -f log_regex_match
-
-log_handler_static_file_sent() {
-    log "STATIC_FILE_SENT $*"
-}
-export -f log_handler_static_file_sent
-
-log_handler_static_file_not_found() {
-    log "STATIC_FILE_NOT_FOUND $*"
-}
-export -f log_handler_static_file_not_found
-
-log_handler_proxy_response() {
-    log "PROXY_RESPONSE $*"
-}
-export -f log_handler_proxy_response
-
-log_handler_command_response() {
-    log "COMMAND_RESPONSE $*"
-}
-export -f log_handler_command_response
-
-log_handler_resource_create() {
-    log "RESOURCE_CREATE $*"
-}
-export -f log_handler_resource_create
-
-log_handler_resource_destroy() {
-    log "RESOURCE_DESTROY $*"
-}
-export -f log_handler_resource_destroy
-
-log_handler_resource_list() {
-    log "RESOURCE_LIST $*"
-}
-export -f log_handler_resource_list
-
-log_handler_resource_retrieve() {
-    log "RESOURCE_RETRIEVE $*"
-}
-export -f log_handler_resource_retrieve
-
-log_handler_resource_update() {
-    log "RESOURCE_UPDATE $*"
-}
-export -f log_handler_resource_update

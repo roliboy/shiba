@@ -10,15 +10,16 @@ stty -echoctl
 
 splash
 
+logs=""
+[[ $SHIBA_LOG_ENDPOINT_MATCH = true ]] && logs+="endpoint matches, "
+[[ $SHIBA_LOG_SQL_QUERY = true ]] && logs+="sql queries, "
+
 echo -e "shiba is listening"
 echo -e "  --> ${YELLOW}address${NC}: ${SHIBA_ADDRESS}"
 echo -e "  --> ${YELLOW}port${NC}: ${SHIBA_PORT}"
 echo -e "  --> ${YELLOW}ident${NC}: shiba/${SHIBA_VERSION}"
 echo -e "  --> ${YELLOW}tls${NC}: disabled"
-logs="${YELLOW}logs${NC}: "
-[[ ayy != lmao ]] && logs="${logs}basic, "
-[[ $SHIBA_LOG_QUERIES = true ]] && logs="${logs}sql queries, "
-echo -e "  --> ${logs%??}"
+echo -e "  --> ${YELLOW}log${NC}: ${logs%??}"
 echo -e "routes:"
 
 for entry in "${STATIC_FILES[@]}"; do
