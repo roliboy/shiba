@@ -153,7 +153,7 @@ handle_client() {
             id="${BASH_REMATCH[1]}"
             log_regex_match "$detail_regex"
             log_endpoint_match "$endpoint"
-            handle_resource_retrieve "$resource"
+            handle_resource_retrieve "$resource" "${id//%20/ }"
         elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
             log_regex_match "$regex"
             log_endpoint_match "$endpoint"
@@ -171,7 +171,7 @@ handle_client() {
             id="${BASH_REMATCH[1]}"
             log_regex_match "$detail_regex"
             log_endpoint_match "$endpoint"
-            handle_resource_destroy "$resource" "$id"
+            handle_resource_destroy "$resource" "${id//%20/ }"
         fi
     done
 }
