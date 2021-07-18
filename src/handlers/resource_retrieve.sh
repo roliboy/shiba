@@ -1,27 +1,31 @@
 #!/usr/bin/env bash
 
 handle_resource_retrieve() {
-    for entry in $(split_list "$model"); do
-        IFS=':' read -r constraint field expected_type <<< "$entry"
-        if [[ $constraint == key ]]; then
-            key_field="$field"
-            key_type="$expected_type"
-        fi
-    done
+    local resource="$1"
+    local id="$2"
 
-    if [[ -n $key_field ]]; then
-        echo "key: $key_field" >> /tmp/pog
-#         TODO: number
-        if [[ $key_type == string ]]; then
-            element="$(jq -c ".[] | select(.$key_field == \"$id\")" < "$resource")"
-        elif [[ $key_type == number ]]; then
-            element="$(jq -c ".[] | select(.$key_field == $id)" < "$resource")"
-        fi
-    else
-        element="$(jq -c ".[] | select(.id == $id)" < "$resource")"
+    local statement
+    statement="$(sql_retrieve_statement "$resource" "$id")"
+
+    echo "st: $statement" >> /tmp/pog
+
+    local object
+    object="$(sqlite3 "$resource" ".mode json" "$statement" 2>/tmp/shibaerr)"
+
+    echo "ob: $object" >> /tmp/pog
+
+    local status="$?"
+
+    object="${object#?}"
+    object="${object%?}"
+
+    if [[ $status -ne 0 ]]; then
+        local error
+        error="$(cat /tmp/shibaerr)"
+        send_response_bad_request "${error#Error: }"
     fi
 
-    send_response_ok "$element"
+    send_response_ok "$object"
     log_handler_resource_retrieve "$id"
 }
 export -f handle_resource_retrieve
