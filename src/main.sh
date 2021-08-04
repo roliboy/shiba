@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+system_check
+
 exit_handler() {
     echo -e "${YELLOW}shutting down...${NC}"
     exit 0
@@ -51,7 +53,8 @@ for entry in "${RESOURCES[@]}"; do
 done
 echo -e ""
 
-
+# TODO: add timeout
+# socat tcp-listen:1337,fork,reuseaddr system:'handle_client'
 while true; do
     nc -lp 1337 -e 'handle_client'
     printlog

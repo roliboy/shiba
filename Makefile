@@ -21,5 +21,7 @@ assemble:
 	@echo '' >> shiba
 	@cat src/handler.sh >> shiba
 	@echo '' >> shiba
+	@cat src/env.sh >> shiba
+	@echo '' >> shiba
 	@cat src/main.sh >> shiba
 	@chmod +x ./shiba
