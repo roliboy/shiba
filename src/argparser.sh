@@ -5,12 +5,16 @@
 SHIBA_ADDRESS='0.0.0.0'
 SHIBA_PORT='1337'
 SHIBA_LOG_ENDPOINT_MATCH=true
-SHIBA_LOG_SQL_QUERY=false
+SHIBA_LOG_SQL_QUERY=true
+SHIBA_LOG_RESPONSE_CODE=true
+SHIBA_LOG_HANDLER_STATUS=true
 
 export SHIBA_ADDRESS
 export SHIBA_PORT
 export SHIBA_LOG_SQL_QUERY
 export SHIBA_LOG_ENDPOINT_MATCH
+export SHIBA_LOG_RESPONSE_CODE
+export SHIBA_LOG_HANDLER_STATUS
 
 join_array() {
     first="$1"
@@ -54,14 +58,25 @@ case "$1" in
         if [[ -d $target ]]; then
             endpoint="$(sed 's:/\?$:/:g' <<< "$endpoint")"
             target="$(sed 's:/\?$:/:g' <<< "$target")"
-            STATIC_DIRECTORY_ENDPOINTS+=("$endpoint")
-            STATIC_DIRECTORY_TARGETS+=("$target")
+            STATIC_DIRECTORIES+=("$endpoint|$target")
         elif [[ -f $target ]]; then
             STATIC_FILES+=("$endpoint|$target")
         else
             echo -e "${RED}ERROR${CLEAR}: '$target' is not a valid file or directory"
             exit 1
         fi
+        shift 3
+        ;;
+    command|c)
+        endpoint="$2"
+        target="$3"
+        COMMANDS+=("${endpoint}|${target}")
+        shift 3
+        ;;
+    proxy|p)
+        endpoint="$2"
+        target="$3"
+        PROXIES+=("${endpoint%/}|${target%/}")
         shift 3
         ;;
     # TODO:make this look not horrible
@@ -121,19 +136,7 @@ case "$1" in
             sqlite3 "$target" "$(sql_schema "${model[@]}")"
         fi
 
-        RESOURCES+=("$(join_object "$endpoint" "$target")")
-        ;;
-    command|c)
-        endpoint="$2"
-        target="$3"
-        COMMANDS+=("$(join_object "$endpoint" "$target")")
-        shift 3
-        ;;
-    proxy|p)
-        endpoint="$2"
-        target="$3"
-        PROXIES+=("$(join_object "${endpoint%/}" "${target%/}")")
-        shift 3
+        RESOURCES+=("$endpoint|$target")
         ;;
     *)
         echo "unknown flag/option: '$1'"
@@ -143,15 +146,13 @@ esac
 done
 
 SHIBA_STATIC_FILES="$(join_array "${STATIC_FILES[@]}")"
-
-# SHIBA_STATIC_DIRECTORIES="$(join_array "${STATIC_DIRECTORIES[@]}")"
-# SHIBA_PROXIES="$(join_array "${PROXIES[@]}")"
-# SHIBA_COMMANDS="$(join_array "${COMMANDS[@]}")"
-# SHIBA_RESOURCES="$(join_array "${RESOURCES[@]}")"
+SHIBA_STATIC_DIRECTORIES="$(join_array "${STATIC_DIRECTORIES[@]}")"
+SHIBA_PROXIES="$(join_array "${PROXIES[@]}")"
+SHIBA_COMMANDS="$(join_array "${COMMANDS[@]}")"
+SHIBA_RESOURCES="$(join_array "${RESOURCES[@]}")"
 
 export SHIBA_STATIC_FILES
-
-# export SHIBA_STATIC_DIRECTORIES
-# export SHIBA_PROXIES
-# export SHIBA_COMMANDS
-# export SHIBA_RESOURCES
+export SHIBA_STATIC_DIRECTORIES
+export SHIBA_PROXIES
+export SHIBA_COMMANDS
+export SHIBA_RESOURCES

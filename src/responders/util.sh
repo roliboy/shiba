@@ -18,7 +18,7 @@ send_response() {
 
     send "HTTP/1.0 ${status}"
     send_headers
-    log "RESPONSE_STATUS" "${status}"
+    log "RESPONSE_CODE" "${status}"
     cat
 }
 export -f send_response

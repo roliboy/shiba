@@ -24,7 +24,7 @@ printlog() {
                 ;;
 
             # SHIBA_LOG_ENDPOINT_MATCH
-            ENDPOINT_MATCH_REGEX)
+            REGEX_MATCH)
                 [[ $SHIBA_LOG_ENDPOINT_MATCH = true ]] || continue
                 >&2 printf "  ${CYAN}%s${CLEAR}\n" "matched"
                 >&2 printf "    %s -> "            "$value"
@@ -33,34 +33,52 @@ printlog() {
                 [[ $SHIBA_LOG_ENDPOINT_MATCH = true ]] || continue
                 >&2 printf "${YELLOW}%s${CLEAR}\n" "$value"
                 ;;
-            NO_ENDPOINT_MATCH)
+            NO_MATCH)
                 [[ $SHIBA_LOG_ENDPOINT_MATCH = true ]] || continue
                 >&2 printf "  ${CYAN}%s${CLEAR}\n"  "matched"
                 >&2 printf "    ${RED}%s${CLEAR}\n" "requested uri didn't match any route"
                 ;;
 
             # RESPONSE STATUS
-            RESPONSE_STATUS)
-                >&2 echo -ne "  ${CYAN}response${CLEAR}\n"
+            RESPONSE_CODE)
+                [[ $SHIBA_LOG_RESPONSE_CODE = true ]] || continue
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "response"
                 if [[ ${value::1} = 2 ]]; then
-                    >&2 echo -ne "        ${GREEN}$value${CLEAR}\n"
+                    >&2 printf "    ${GREEN}%s${CLEAR}\n" "$value"
                 elif [[ ${value::1} = 4 ]]; then
-                    >&2 echo -ne "        ${RED}$value${CLEAR}\n"
+                    >&2 printf "    ${RED}%s${CLEAR}\n" "$value"
                 else
-                    >&2 echo -ne "        $value\n"
+                    >&2 printf "    %s\n" "$value"
                 fi
                 ;;
 
-            # TODO: module/handler status log flag
             # STATIC FILE HANDLER
             HANDLER_STATIC_FILE_SENT)
+                [[ $SHIBA_LOG_HANDLER_STATUS = true ]] || continue
                 read -r filename filesize filetype <<< "${value}"
-                >&2 echo -ne "    ${CYAN}action${CLEAR}\n"
-                >&2 echo -ne "        ${GREEN}sent${CLEAR} $filesize bytes of $filetype ($filename)\n"
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
+                # TODO: colors
+                >&2 printf "    ${GREEN}%s${CLEAR} %s\n" "sent" "$filesize bytes of $filetype ($filename)"
                 ;;
             HANDLER_STATIC_FILE_NOT_FOUND)
-                >&2 echo -ne "    ${CYAN}action${CLEAR}\n"
-                >&2 echo -ne "        ${RED}not found${CLEAR} ($fiename)\n"
+                [[ $SHIBA_LOG_HANDLER_STATUS = true ]] || continue
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
+                # TODO: this
+                >&2 printf "    ${RED}%s${CLEAR} %s\n" "not found" "($value)"
+                ;;
+
+            HANDLER_COMMAND_SUCCESS)
+                read -ra parts <<< "${value}"
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
+                # TODO: colors
+                >&2 printf "    ${GREEN}%s${CLEAR} %s producing %d bytes of %s\n" "executed" "${parts[*]:2}" "${parts[0]}" "${parts[1]}"
+                ;;
+
+            HANDLER_COMMAND_ERROR)
+                read -ra parts <<< "${value}"
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
+                # TODO: colors
+                >&2 printf "    ${RED}%s${CLEAR} %s with exit code %d\n" "failed" "${parts[@]:1}" "${parts[0]}"
                 ;;
             
             # SHIBA_LOG_SQL_QUERY
@@ -70,6 +88,10 @@ printlog() {
                 while IFS= read -r line; do
                     echo -ne "        $line\n"
                 done <<< "$(sql_syntax_highlight "$value")"
+                ;;
+            
+            *)
+                # >&2 echo "$event not handled"
                 ;;
         esac
     done < "/tmp/shibalog$BASHPID"

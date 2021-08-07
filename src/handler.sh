@@ -47,9 +47,14 @@ handle_client() {
     set -o pipefail
 
 
-    # ///////////////
-    start_ts="$(date +%s%N | cut -b7-13)"
-    # ///////////////
+    # # ///////////////
+    # start_ts="$(date +%s%N | cut -b7-13)"
+    # # ///////////////
+    # # /////////////////////
+    # end_ts="$(date +%s%N | cut -b7-13)"
+    # >&2 echo "end:"
+    # >&2 echo "$((end_ts - start_ts))"
+    # # /////////////////////
     
 
     read -r REQUEST_METHOD REQUEST_URI REQUEST_HTTP_VERSION <<< "$(recv)"
@@ -80,8 +85,8 @@ handle_client() {
         if [[ ${header} =~ ^([^:]+):[[:space:]]*(.*[^[:space:]])[[:space:]]*$ ]]; then
             local key="${BASH_REMATCH[1]}"
             local value="${BASH_REMATCH[2]}"
-            log "REQUEST_HEADER_KEY" "${key}"
-            log "REQUEST_HEADER_VALUE" "${value}"
+            # log "REQUEST_HEADER_KEY" "${key}"
+            # log "REQUEST_HEADER_VALUE" "${value}"
             [[ ${key} =~ [Cc]ontent-[Ll]ength ]] && CONTENT_LENGTH="${value}"
         fi
     done
@@ -97,23 +102,13 @@ handle_client() {
         "Access-Control-Allow-Headers: *"
     )
 
-
-    # TODO: pass newline separated entries from parent
-    # parse_endpoints STATIC_FILES <<< "${SHIBA_STATIC_FILES//;;;/$'\n'}"
-    # parse_endpoints STATIC_DIRECTORIES <<< "${SHIBA_STATIC_DIRECTORIES//;;;/$'\n'}"
-    # parse_endpoints COMMANDS <<< "${SHIBA_COMMANDS//;;;/$'\n'}"
-    # parse_endpoints PROXIES <<< "${SHIBA_PROXIES//;;;/$'\n'}"
-    # parse_endpoints RESOURCES <<< "${SHIBA_RESOURCES//;;;/$'\n'}"
-    
-
     while read -r entry; do
+        [[ -z $entry ]] && continue
         IFS='|' read -r endpoint target <<< "${entry}"
-
-        >&2 echo "$endpoint $target"
 
         regex="^${endpoint}$"
         if [[ $REQUEST_URI =~ $regex ]]; then
-            log "ENDPOINT_MATCH_REGEX" "$regex"
+            log "REGEX_MATCH" "$regex"
             log "ENDPOINT_MATCH" "$endpoint"
             if [[ $REQUEST_METHOD != GET ]]; then
                 send_response_method_not_allowed "$REQUEST_METHOD"
@@ -121,41 +116,43 @@ handle_client() {
             fi
 
             handle_static_file "$target"
-            # /////////////////////
-            end_ts="$(date +%s%N | cut -b7-13)"
-            >&2 echo "end:"
-            >&2 echo "$((end_ts - start_ts))"
-            # /////////////////////
             quit
         fi
     done <<< "${SHIBA_STATIC_FILES}"
 
-    # for entry in "${STATIC_DIRECTORIES[@]}"; do
-    #     parse_object endpoint directory <<< "$entry"
+    while read -r entry; do
+        [[ -z $entry ]] && continue
+        IFS='|' read -r endpoint directory <<< "${entry}"
 
-    #     regex="^${endpoint}(.+)$"
-    #     if [[ $REQUEST_URI =~ $regex ]]; then
-    #         if [[ $REQUEST_METHOD != GET ]]; then
-    #             send_response_method_not_allowed "$REQUEST_METHOD"
-    #             return
-    #         fi
-    #         file="$directory${BASH_REMATCH[1]}"
-    #         log_regex_match "$regex"
-    #         log_endpoint_match "$endpoint"
-    #         handle_static_file
-    #     fi
-    # done
+        regex="^${endpoint}(.+)$"
+        if [[ $REQUEST_URI =~ $regex ]]; then
+            if [[ $REQUEST_METHOD != GET ]]; then
+                send_response_method_not_allowed "$REQUEST_METHOD"
+                quit
+            fi
 
-    # for entry in "${COMMANDS[@]}"; do
-    #     parse_object endpoint command <<< "$entry"
+            file="$directory${BASH_REMATCH[1]}"
+            log "REGEX_MATCH" "$regex"
+            log "ENDPOINT_MATCH" "$endpoint"
 
-    #     regex="^$(echo "$endpoint" | sed 's|{[^}]*}|([^/]+)|g')$"
-    #     if [[ $REQUEST_URI =~ $regex ]]; then
-    #         log_regex_match "$regex"
-    #         log_endpoint_match "$endpoint"
-    #         handle_command "$command" "${BASH_REMATCH[@]:1}"
-    #     fi
-    # done
+            handle_static_file "$file"
+            quit
+        fi
+    done <<< "${SHIBA_STATIC_DIRECTORIES}"
+
+    while read -r entry; do
+        [[ -z $entry ]] && continue
+        IFS='|' read -r endpoint command <<< "${entry}"
+
+        regex="^$(sed 's|{[^}]*}|([^/]+)|g' <<< "$endpoint")$"
+        if [[ $REQUEST_URI =~ $regex ]]; then
+            log "REGEX_MATCH" "$regex"
+            log "ENDPOINT_MATCH" "$endpoint"
+
+            handle_command "${command}" "${BASH_REMATCH[@]:1}"
+            quit
+        fi
+    done <<< "${SHIBA_COMMANDS}"
 
     # for entry in "${PROXIES[@]}"; do
     #     parse_object endpoint server <<< "$entry"
@@ -205,7 +202,7 @@ handle_client() {
     #     fi
     # done
 
-    log "NO_ENDPOINT_MATCH"
+    log "NO_MATCH"
     send_response_not_found
     printlog
 }

@@ -12,27 +12,38 @@ handle_command() {
     export SHIBA_REQUEST_METHOD
 
 #     TODO: binary support?
+    outfile="/tmp/shibatmp${BASHPID}"
     if [[ ${#arguments[@]} -eq 0 ]]; then
-        if [[ -n $CONTENT_LENGTH ]]; then
-            result="$(head -c "$CONTENT_LENGTH" | "$command")"
+        if [[ -n ${CONTENT_LENGTH+x} ]]; then
+            head -c "$CONTENT_LENGTH" | "$command" > "$outfile"
         else
-            result="$("$command" <<< "")"
+            "$command" <<< "" > "$outfile"
         fi
     else
-        if [[ -n $CONTENT_LENGTH ]]; then
-            result="$(head -c "$CONTENT_LENGTH" | "$command" "${arguments[@]}")"
+        if [[ -n ${CONTENT_LENGTH+x} ]]; then
+            head -c "$CONTENT_LENGTH" | "$command" "${arguments[@]}" > "$outfile"
         else
-            result="$("$command" "${arguments[@]}" <<< "")"
+            "$command" "${arguments[@]}" <<< "" > "$outfile"
         fi
     fi
 
     exit_code="$?"
+
+    # TODO: get content type from command
+    # TODO: get status from command
+    local content_length="$(stat --printf='%s' "$outfile")"
+    local content_type="$(file -b --mime-type "$outfile")"
+
     if [[ $exit_code -eq 0 ]]; then
-        send_response_ok "$result" "text/plain"
+        send_response "$STATUS_OK" "${content_length}" "${content_type}" < "${outfile}"
+        # TODO: add info about stdin
+        log "HANDLER_COMMAND_SUCCESS" "${content_length}" "${content_type}" "${command} ${arguments[@]}"
     else
         send_response_internal_server_error
+        # TODO: add info about stdin
+        log "HANDLER_COMMAND_ERROR" "${exit_code}" "${command} ${arguments[@]}"
     fi
 
-    log_handler_command_response "$command" "${arguments[*]}"
+    rm "$outfile"
 }
 export -f handle_command

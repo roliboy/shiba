@@ -4,7 +4,6 @@
 # TODO: merge this with static file handler
 send_response_ok() {
     send_response "$STATUS_OK" "${#1}" "${2:-application/json}" <<< "$1"
-    log "RESPONSE_STATUS" "${STATUS_OK}"
 }
 export -f send_response_ok
 
