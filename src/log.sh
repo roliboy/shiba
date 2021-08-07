@@ -1,101 +1,83 @@
 #!/usr/bin/env bash
 
-error() {
-    echo -e "${RED}ERROR${NC}: $1"
-    exit "${2:-1}"
-}
-
 printlog() {
     while read -r line; do
         event="$(cut -d' ' -f1 <<< "$line")"
         value="$(cut -d' ' -f2- <<< "$line")"
         case "$event" in
-            RECEIVED)
+            REQUEST_NO_METHOD)
+                >&2 echo -ne "${RED}bad request:${CLEAR} no method in request header\n"
                 ;;
-            SENT)
+            REQUEST_NO_URI)
+                >&2 echo -ne "${RED}bad request:${CLEAR} no URI in request header\n"
+                ;;
+            REQUEST_NO_HTTP_VERSION)
+                >&2 echo -ne "${RED}bad request:${CLEAR} no HTTP version in request header\n"
                 ;;
 
             # SHIBA_LOG_REQUEST
             REQUEST_METHOD)
-                echo -ne "${GREEN}$value${NC} "
+                >&2 echo -ne "${GREEN}$value${CLEAR} "
                 ;;
             REQUEST_URI)
-                echo -ne "${BLUE}$value:${NC}\n"
+                >&2 echo -ne "${BLUE}$value:${CLEAR}\n"
                 ;;
 
             # SHIBA_LOG_ENDPOINT_MATCH
             ENDPOINT_MATCH_REGEX)
                 [[ $SHIBA_LOG_ENDPOINT_MATCH = true ]] || continue
-                echo -ne "    ${CYAN}matched${NC}\n"
-                echo -ne "        $value -> "
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "matched"
+                >&2 printf "    %s -> "            "$value"
                 ;;
             ENDPOINT_MATCH)
                 [[ $SHIBA_LOG_ENDPOINT_MATCH = true ]] || continue
-                echo -ne "${YELLOW}$value${NC}\n"
+                >&2 printf "${YELLOW}%s${CLEAR}\n" "$value"
+                ;;
+            NO_ENDPOINT_MATCH)
+                [[ $SHIBA_LOG_ENDPOINT_MATCH = true ]] || continue
+                >&2 printf "  ${CYAN}%s${CLEAR}\n"  "matched"
+                >&2 printf "    ${RED}%s${CLEAR}\n" "requested uri didn't match any route"
                 ;;
 
-            STATIC_FILE_SENT)
-                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
-                echo -ne "    ${CYAN}file${NC} $value ${GREEN}sent${NC}\n"
+            # RESPONSE STATUS
+            RESPONSE_STATUS)
+                >&2 echo -ne "  ${CYAN}response${CLEAR}\n"
+                if [[ ${value::1} = 2 ]]; then
+                    >&2 echo -ne "        ${GREEN}$value${CLEAR}\n"
+                elif [[ ${value::1} = 4 ]]; then
+                    >&2 echo -ne "        ${RED}$value${CLEAR}\n"
+                else
+                    >&2 echo -ne "        $value\n"
+                fi
                 ;;
-            STATIC_FILE_NOT_FOUND)
-                echo -ne "    ${CYAN}code${NC} ${RED}404 Not Found${NC}\n"
-                echo -ne "    ${CYAN}file${NC} $value ${RED}not found${NC}\n"
+
+            # TODO: module/handler status log flag
+            # STATIC FILE HANDLER
+            HANDLER_STATIC_FILE_SENT)
+                read -r filename filesize filetype <<< "${value}"
+                >&2 echo -ne "    ${CYAN}action${CLEAR}\n"
+                >&2 echo -ne "        ${GREEN}sent${CLEAR} $filesize bytes of $filetype ($filename)\n"
                 ;;
-            PROXY_RESPONSE)
-                read -r contentlength contenttype <<< "$value"
-                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
-                echo -ne "    ${CYAN}proxy${NC} responded with ${GREEN}$contentlength${NC} bytes of $contenttype\n"
-                ;;
-            COMMAND_RESPONSE)            
-                read -r command arguments <<< "$value"
-                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
-                echo -ne "    ${CYAN}command${NC} ${MAGENTA}$command $arguments${NC} ran successfully\n"
-                ;;
-            RESOURCE_CREATE)
-                read -r id <<< "$value"
-                echo -ne "    ${CYAN}code${NC} ${GREEN}201 CREATED${NC}\n"
-                echo -ne "    ${CYAN}created${NC} resource with id ${GREEN}$id${NC}\n"
-                ;;
-            RESOURCE_DESTROY)
-                read -r id <<< "$value"
-                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
-                echo -ne "    ${CYAN}destroyed${NC} resource with id ${GREEN}$id${NC}\n"
-                ;;
-            RESOURCE_LIST)
-                read -r length <<< "$value"
-                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
-                echo -ne "    ${CYAN}listed${NC} ${GREEN}$length${NC} elements\n"
-                ;;
-            RESOURCE_RETRIEVE)
-                read -r id <<< "$value"
-                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
-                echo -ne "    ${CYAN}retrieved${NC} resource with id ${GREEN}$id${NC}\n"
-                ;;
-            RESOURCE_UPDATE)
-                read -r id <<< "$value"
-                echo -ne "    ${CYAN}code${NC} ${GREEN}200 OK${NC}\n"
-                echo -ne "    ${CYAN}updated${NC} resource with id ${GREEN}$id${NC}\n"
+            HANDLER_STATIC_FILE_NOT_FOUND)
+                >&2 echo -ne "    ${CYAN}action${CLEAR}\n"
+                >&2 echo -ne "        ${RED}not found${CLEAR} ($fiename)\n"
                 ;;
             
             # SHIBA_LOG_SQL_QUERY
             SQL_QUERY)
                 [[ $SHIBA_LOG_SQL_QUERY = true ]] || continue
-                echo -ne "    ${CYAN}sql query${NC}\n"
+                echo -ne "    ${CYAN}sql query${CLEAR}\n"
                 while IFS= read -r line; do
                     echo -ne "        $line\n"
                 done <<< "$(sql_syntax_highlight "$value")"
                 ;;
         esac
-    done < /tmp/shibalog
+    done < "/tmp/shibalog$BASHPID"
+    rm "/tmp/shibalog$BASHPID"
 }
-
-startlog() {
-    echo -n '' > /tmp/shibalog
-}
-export -f startlog
+export -f printlog
 
 log() {
-    echo "$*" >> /tmp/shibalog
+    echo "$*" >> "/tmp/shibalog$BASHPID"
 }
 export -f log

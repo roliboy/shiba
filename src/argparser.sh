@@ -1,38 +1,28 @@
 #!/usr/bin/env bash
 
+# TODO: put these into functions
+
 SHIBA_ADDRESS='0.0.0.0'
 SHIBA_PORT='1337'
 SHIBA_LOG_ENDPOINT_MATCH=true
 SHIBA_LOG_SQL_QUERY=false
 
-PROXIES=()
-COMMANDS=()
-RESOURCES=()
-STATIC_FILES=()
-STATIC_DIRECTORIES=()
-
-join_object() {
-    first="$1"
-    shift
-    printf "%s" "$first" "${@/#/@@@}"
-}
+export SHIBA_ADDRESS
+export SHIBA_PORT
+export SHIBA_LOG_SQL_QUERY
+export SHIBA_LOG_ENDPOINT_MATCH
 
 join_array() {
     first="$1"
     shift
-    printf "%s" "$first" "${@/#/;;;}"
+    printf "%s" "$first" "${@/#/$'\n'}"
 }
 
-
-split_object() {
-    echo -n "${*//@@@/$'\n'}"
-}
-
-split_array() {
-    echo -n "${*//;;;/$'\n'}"
-}
-
-
+STATIC_FILES=()
+STATIC_DIRECTORIES=()
+RESOURCES=()
+COMMANDS=()
+PROXIES=()
 
 while [ "$#" -gt 0 ]; do
 case "$1" in
@@ -64,11 +54,12 @@ case "$1" in
         if [[ -d $target ]]; then
             endpoint="$(sed 's:/\?$:/:g' <<< "$endpoint")"
             target="$(sed 's:/\?$:/:g' <<< "$target")"
-            STATIC_DIRECTORIES+=("$(join_object "$endpoint" "$target")")
+            STATIC_DIRECTORY_ENDPOINTS+=("$endpoint")
+            STATIC_DIRECTORY_TARGETS+=("$target")
         elif [[ -f $target ]]; then
-            STATIC_FILES+=("$(join_object "$endpoint" "$target")")
+            STATIC_FILES+=("$endpoint|$target")
         else
-            echo -e "${RED}ERROR${NC}: '$target' is not a valid file or directory"
+            echo -e "${RED}ERROR${CLEAR}: '$target' is not a valid file or directory"
             exit 1
         fi
         shift 3
@@ -152,21 +143,15 @@ esac
 done
 
 SHIBA_STATIC_FILES="$(join_array "${STATIC_FILES[@]}")"
-SHIBA_STATIC_DIRECTORIES="$(join_array "${STATIC_DIRECTORIES[@]}")"
-SHIBA_PROXIES="$(join_array "${PROXIES[@]}")"
-SHIBA_COMMANDS="$(join_array "${COMMANDS[@]}")"
-SHIBA_RESOURCES="$(join_array "${RESOURCES[@]}")"
 
-export SHIBA_ADDRESS
-export SHIBA_PORT
-export SHIBA_LOG_SQL_QUERY
-export SHIBA_LOG_ENDPOINT_MATCH
-
-export -f split_object
-export -f split_array
+# SHIBA_STATIC_DIRECTORIES="$(join_array "${STATIC_DIRECTORIES[@]}")"
+# SHIBA_PROXIES="$(join_array "${PROXIES[@]}")"
+# SHIBA_COMMANDS="$(join_array "${COMMANDS[@]}")"
+# SHIBA_RESOURCES="$(join_array "${RESOURCES[@]}")"
 
 export SHIBA_STATIC_FILES
-export SHIBA_STATIC_DIRECTORIES
-export SHIBA_PROXIES
-export SHIBA_COMMANDS
-export SHIBA_RESOURCES
+
+# export SHIBA_STATIC_DIRECTORIES
+# export SHIBA_PROXIES
+# export SHIBA_COMMANDS
+# export SHIBA_RESOURCES

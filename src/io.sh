@@ -9,6 +9,14 @@ recv() {
 }
 export -f recv
 
+recv2() {
+    local -n lineasd="$1"
+    read -r data
+    lineasd=${data%%$'\r'}
+    # log_received_data "$data"
+}
+export -f recv2
+
 send() {
 #     log_sent_data "$*"
     printf '%s\r\n' "$*"

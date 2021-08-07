@@ -191,9 +191,9 @@ sql_syntax_highlight() {
             fi
 
             if [[ $token =~ values|where|returning ]]; then
-                highlighted+="\n${MAGENTA}$token${NC} "
+                highlighted+="\n${MAGENTA}$token${CLEAR} "
             else
-                highlighted+="${MAGENTA}$token${NC} "
+                highlighted+="${MAGENTA}$token${CLEAR} "
             fi
         elif [[ $token =~ $methods ]]; then
             if [[ $token = json_extract ]]; then
@@ -201,14 +201,14 @@ sql_syntax_highlight() {
                 if [[ $mode = update ]]; then
                     highlighted+="    "
                 fi
-                highlighted+="    ${CYAN}$token${NC}"
+                highlighted+="    ${CYAN}$token${CLEAR}"
             else
-                highlighted+="${CYAN}$token${NC}"
+                highlighted+="${CYAN}$token${CLEAR}"
             fi
         elif [[ $token =~ $json_literal ]]; then
-            highlighted="${highlighted% }${WHITE}$token${NC} "
+            highlighted="${highlighted% }${WHITE}$token${CLEAR} "
         elif [[ $token =~ $string_literal ]]; then
-            highlighted+="${YELLOW}$token${NC} "
+            highlighted+="${YELLOW}$token${CLEAR} "
         elif [[ $token =~ $column_name ]]; then
             if [[ $mode = update ]]; then
                 highlighted+="\n"
@@ -218,19 +218,19 @@ sql_syntax_highlight() {
                     highlighted+="    "
                     tab=true
                 fi
-                highlighted+="    ${GREEN}$token${NC} "
+                highlighted+="    ${GREEN}$token${CLEAR} "
             else
-                highlighted+="\n    ${GREEN}$token${NC} "
+                highlighted+="\n    ${GREEN}$token${CLEAR} "
             fi
         elif [[ $token =~ $punctuation ]]; then
             if [[ $token = ')' ]]; then
-                highlighted="${highlighted% }${WHITE}$token${NC}"
+                highlighted="${highlighted% }${WHITE}$token${CLEAR}"
             elif [[ $token = ',' ]]; then
-                highlighted="${highlighted% }${WHITE}$token${NC} "
+                highlighted="${highlighted% }${WHITE}$token${CLEAR} "
             elif [[ $token = '=' || $token = '*' ]]; then
-                highlighted+="${WHITE}$token${NC} "
+                highlighted+="${WHITE}$token${CLEAR} "
             else
-                highlighted+="${WHITE}$token${NC}"
+                highlighted+="${WHITE}$token${CLEAR}"
             fi
         fi
     done <<< "$(grep -oP "$regex" <<< "$query")"
