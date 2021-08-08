@@ -31,6 +31,17 @@ check_dependencies() {
         echo -e "  └──────────────────────┘"
     fi
 
+    if ! command -v jq > /dev/null; then
+        echo -e "${RED}WARNING:${CLEAR} jq not installed"
+        echo -e "  this is an optional component required by the 'resource' module"
+        echo -e "  it's used for json data parsing and validation"
+        echo -e "  you can install it by running the following command:"
+        echo -e "  ┌────────────────────┐"
+        echo -e "  │ \$ ${CYAN}pacman${CLEAR} ${GREEN}-Sy${CLEAR} jq │"
+        echo -e "  └────────────────────┘"
+        echo -e ""
+    fi
+
     # TODO: exit if there were errors
 }
 

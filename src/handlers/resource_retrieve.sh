@@ -7,12 +7,8 @@ handle_resource_retrieve() {
     local statement
     statement="$(sql_retrieve_statement "$resource" "$id")"
 
-    log "SQL_QUERY" "$statement"
-
     local object
     object="$(sqlite3 "$resource" ".mode json" "$statement" 2>/tmp/shibaerr)"
-
-    echo "ob: $object" >> /tmp/pog
 
     local status="$?"
 
@@ -26,6 +22,12 @@ handle_resource_retrieve() {
     fi
 
     send_response_ok "$object"
-    log_handler_resource_retrieve "$id"
+
+
+    local idfield="$(sql_get_id_field "$resource")"
+    local idval="$(jq ".\"$idfield\"" <<< "${object}")"
+
+    log "HADNLER_RESOURCE_RETRIEVE_SUCCESS" "$idfield" "$idval"
+    log "SQL_QUERY" "$statement"
 }
 export -f handle_resource_retrieve

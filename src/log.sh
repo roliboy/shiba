@@ -91,13 +91,47 @@ printlog() {
                 # TODO: colors
                 >&2 printf "    ${GREEN}%s${CLEAR} responded with %d bytes of %s\n" "remote" "${parts[0]}" "${parts[1]}"
                 ;;
+
+            HADNLER_RESOURCE_LIST_SUCCESS)
+                [[ $SHIBA_LOG_HANDLER_STATUS = true ]] || continue
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
+                >&2 printf "    ${GREEN}%s${CLEAR} %d entries\n" "listed" "${value}"
+                ;;
+            HADNLER_RESOURCE_CREATE_SUCCESS)
+                [[ $SHIBA_LOG_HANDLER_STATUS = true ]] || continue
+                read -ra parts <<< "${value}"
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
+                # TODO: colors
+                >&2 printf "    ${GREEN}%s${CLEAR} entry with %s %s\n" "created" "${parts[0]}" "${parts[1]}"
+                ;;
+            HADNLER_RESOURCE_RETRIEVE_SUCCESS)
+                [[ $SHIBA_LOG_HANDLER_STATUS = true ]] || continue
+                read -ra parts <<< "${value}"
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
+                # TODO: colors
+                >&2 printf "    ${GREEN}%s${CLEAR} entry with %s %s\n" "retrieved" "${parts[0]}" "${parts[1]}"
+                ;;
+            HADNLER_RESOURCE_UPDATE_SUCCESS)
+                [[ $SHIBA_LOG_HANDLER_STATUS = true ]] || continue
+                read -ra parts <<< "${value}"
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
+                # TODO: colors
+                >&2 printf "    ${GREEN}%s${CLEAR} entry with %s %s\n" "updated" "${parts[0]}" "${parts[1]}"
+                ;;
+            HADNLER_RESOURCE_DESTROY_SUCCESS)
+                [[ $SHIBA_LOG_HANDLER_STATUS = true ]] || continue
+                read -ra parts <<< "${value}"
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
+                # TODO: colors
+                >&2 printf "    ${GREEN}%s${CLEAR} entry with %s %s\n" "destroyed" "${parts[0]}" "${parts[1]}"
+                ;;
             
             # SHIBA_LOG_SQL_QUERY
             SQL_QUERY)
                 [[ $SHIBA_LOG_SQL_QUERY = true ]] || continue
-                echo -ne "    ${CYAN}sql query${CLEAR}\n"
+                >&2 echo -ne "  ${CYAN}sql query${CLEAR}\n"
                 while IFS= read -r line; do
-                    echo -ne "        $line\n"
+                    >&2 echo -ne "    $line\n"
                 done <<< "$(sql_syntax_highlight "$value")"
                 ;;
             

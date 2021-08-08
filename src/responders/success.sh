@@ -8,8 +8,9 @@ send_response_ok() {
 export -f send_response_ok
 
 # 201
+# TODO: thing
 send_response_created() {
-    send_response "$STATUS_CREATED" "$1" "application/json"
+    send_response "$STATUS_CREATED" "${#1}" "application/json" <<< "$1"
 }
 export -f send_response_created
 

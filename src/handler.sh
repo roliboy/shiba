@@ -163,13 +163,12 @@ handle_client() {
         fi
     done
 
-    for entry in "${PROXIES}"; do
+    for entry in "${PROXIES[@]}"; do
         IFS='|' read -r endpoint server <<< "${entry}"
 
         # TODO: something about the trailing slashes
         regex="^$endpoint(/.*)?$"
 
-        # TODO: handle other methods
         if [[ $REQUEST_URI =~ $regex ]]; then
             log "REGEX_MATCH" "$regex"
             log "ENDPOINT_MATCH" "$endpoint"
@@ -180,38 +179,44 @@ handle_client() {
         fi
     done
 
-    # for entry in "${RESOURCES[@]}"; do
-    #     parse_object endpoint resource <<< "$entry"
+    for entry in "${RESOURCES[@]}"; do
+        IFS='|' read -r endpoint resource <<< "${entry}"
 
-    #     regex="^${endpoint}/?$"
-    #     detail_regex="^${endpoint}/([^/]+)/?$"
+        regex="^${endpoint}/?$"
+        detail_regex="^${endpoint}/([^/]+)/?$"
 
-    #     # TODO: replace id with custom key field name if present
-    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
-    #         id="${BASH_REMATCH[1]}"
-    #         log "ENDPOINT_MATCH_REGEX" "$detail_regex"
-    #         log "ENDPOINT_MATCH" "$endpoint/{id}"
-    #         handle_resource_retrieve "$resource" "${id//%20/ }"
-    #     elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #         log "ENDPOINT_MATCH_REGEX" "$regex"
-    #         log "ENDPOINT_MATCH" "$endpoint"
-    #         handle_resource_list "$resource"
-    #     elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #         log "ENDPOINT_MATCH_REGEX" "$regex"
-    #         log "ENDPOINT_MATCH" "$endpoint"
-    #         handle_resource_create "$resource"
-    #     elif [[ $REQUEST_METHOD == "PUT" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
-    #         id="${BASH_REMATCH[1]}"
-    #         log "ENDPOINT_MATCH_REGEX" "$detail_regex"
-    #         log "ENDPOINT_MATCH" "$endpoint/{id}"
-    #         handle_resource_update "$resource" "${id//%20/ }"
-    #     elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
-    #         id="${BASH_REMATCH[1]}"
-    #         log "ENDPOINT_MATCH_REGEX" "$detail_regex"
-    #         log "ENDPOINT_MATCH" "$endpoint/{id}"
-    #         handle_resource_destroy "$resource" "${id//%20/ }"
-    #     fi
-    # done
+        # TODO: replace id with custom key field name if present
+        # send 404 when resource does not exist
+        if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            log "REGEX_MATCH" "$regex"
+            log "ENDPOINT_MATCH" "$endpoint"
+            handle_resource_list "$resource"
+            quit
+        elif [[ $REQUEST_METHOD == "POST" ]] && [[ $REQUEST_URI =~ $regex ]]; then
+            log "REGEX_MATCH" "$regex"
+            log "ENDPOINT_MATCH" "$endpoint"
+            handle_resource_create "$resource"
+            quit
+        elif [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+            id="${BASH_REMATCH[1]}"
+            log "REGEX_MATCH" "$detail_regex"
+            log "ENDPOINT_MATCH" "$endpoint/{id}"
+            handle_resource_retrieve "$resource" "${id}"
+            quit
+        elif [[ $REQUEST_METHOD == "PUT" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+            id="${BASH_REMATCH[1]}"
+            log "REGEX_MATCH" "$detail_regex"
+            log "ENDPOINT_MATCH" "$endpoint/{id}"
+            handle_resource_update "$resource" "${id}"
+            quit
+        elif [[ $REQUEST_METHOD == "DELETE" ]] && [[ $REQUEST_URI =~ $detail_regex ]]; then
+            id="${BASH_REMATCH[1]}"
+            log "REGEX_MATCH" "$detail_regex"
+            log "ENDPOINT_MATCH" "$endpoint/{id}"
+            handle_resource_destroy "$resource" "${id}"
+            quit
+        fi
+    done
 
     log "NO_MATCH"
     send_response_not_found

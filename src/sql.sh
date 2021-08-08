@@ -33,6 +33,22 @@ sql_schema() {
 }
 
 
+sql_get_id_field() {
+    local resource="$1"
+    local schema="$(sqlite3 "$resource" ".schema model" | grep -oP '\(\K.*(?=\))')"
+    local key_field
+    local key_type
+    while read -r line; do
+        if [[ $line =~ ^\'(.+)\'[[:space:]]([^ ]+)[[:space:]]primary[[:space:]]key$ ]]; then
+            key_field="${BASH_REMATCH[1]}"
+            key_type="${BASH_REMATCH[2]}"
+        fi
+    done <<< "${schema//, /$'\n'}"
+    echo "$key_field"
+}
+export -f sql_get_id_field
+
+
 sql_create_statement() {
     local resource="$1"
     local blob="$2"
@@ -180,7 +196,7 @@ sql_syntax_highlight() {
 
     local highlighted
 
-    local mode
+    local mode=default
     local tab=true
 
     # TODO: clean this
@@ -237,3 +253,4 @@ sql_syntax_highlight() {
 
     echo -ne "$highlighted"
 }
+export -f sql_syntax_highlight

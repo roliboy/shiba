@@ -7,7 +7,6 @@ handle_resource_destroy() {
     local statement
     statement="$(sql_destroy_statement "$resource" "$id")"
 
-    log "SQL_QUERY" "$statement"
 
     local object
     object="$(sqlite3 "$resource" ".mode json" "$statement" 2>/tmp/shibaerr)"
@@ -25,6 +24,11 @@ handle_resource_destroy() {
     fi
 
     send_response_ok "$object"
-    log_handler_resource_destroy "$id"
+    
+    local idfield="$(sql_get_id_field "$resource")"
+    local idval="$(jq ".\"$idfield\"" <<< "${object}")"
+
+    log "HADNLER_RESOURCE_DESTROY_SUCCESS" "$idfield" "$idval"
+    log "SQL_QUERY" "$statement"
 }
 export -f handle_resource_destroy

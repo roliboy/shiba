@@ -7,7 +7,6 @@ handle_resource_list() {
     # statement="$(sql_list_statement "$resource")"
     statement="$(sql_list_statement)"
 
-    log "SQL_QUERY" "$statement"
 
     # TODO: pipe directly?
     local objects
@@ -21,7 +20,15 @@ handle_resource_list() {
         send_response_bad_request "${error#Error: }"
     fi
 
+    if [[ -z $objects ]]; then
+        objects="[]"
+    fi
+
     send_response_ok "${objects//$'\n'}"
-    log_handler_resource_list "420"
+
+    local objcount="$(jq 'length' <<< "$objects")"
+
+    log "HADNLER_RESOURCE_LIST_SUCCESS" "$objcount"
+    log "SQL_QUERY" "$statement"
 }
 export -f handle_resource_list
