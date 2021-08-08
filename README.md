@@ -4,7 +4,7 @@
   </a>
   <h1 align="center">SHIBA</h1>
   <p align="center">
-    The good boie HTTP server
+    The good boie webdev companion
   </p>
 </p>
 
@@ -13,7 +13,7 @@
 
 ## About The Project [WIP]
 
-Shiba is your all-in-one webapp prototyping companion. A versatile and easy-to-use tool that can act as a static HTTP server, CORS proxy, REST API and more
+Shiba is your all-in-one webapp prototyping companion. A versatile and easy-to-use tool that can act as a static HTTP server, CORS proxy, REST API and more.
 
 <!-- TL;DR of how it compares to other frameworks? -->
 <!-- shiba is intended to be used exclusively in the prototyping phase -->
@@ -24,49 +24,51 @@ Shiba is your all-in-one webapp prototyping companion. A versatile and easy-to-u
 ## Features & Usage [WIP]
 
 <!-- TODO: more relevant example / full app -->
+Currently, shiba has four request handlers:
 
 - ### static
   ```plaintext
   shiba static /      index.html
-  shiba static /media images
+  shiba static /media images/
   ```
-  Used for statically serving local files and directories
+  Used for statically serving local files and directories.
+  See [static.md](examples/static.md) for more examples.
   
 - ### proxy
   ```plaintext
   shiba proxy /api localhost:8080/api/v2
   ```
-  Used for forwarding requests to a different server or endpoint and attaching CORS headers to responses
+  Used for forwarding requests to a different server or endpoint and attaching CORS headers to responses.
+  See [proxy.md](examples/proxy.md) for more examples.
 
 - ### command
   ```plaintext
   shiba command /wordcount    'wc -w'
   shiba command /drop/{table} ./dropit
   ```
-  Used for executing commands and scripts. Path variables will be used as arguments and the request body as standard input
+  Used for executing commands and scripts.
+  See [command.md](examples/command.md) for more examples.
 
 - ### resource
   ```plaintext
-  shiba resource /documents documents.json
+  shiba resource /documents documents.sqlite3 [ title:string pages:int ]
   ```
-  Used for creating a REST resource that supports CRUD operations
-  See [resource.md](examples/resource.md) for examples involving model definition, type constraints and id overriding
+  Used for creating a REST resource that supports CRUD operations.
+  See [resource.md](examples/resource.md) for more examples.
 
-### putting everything together
-invoking shiba with these arguments:
+### example
+Using the following parameters, shiba will statically host an index page and create an endpoint that counts the number of words in post data:
 ```plaintext
 shiba \
-  static   /             index.html            \
-  static   /media        images/               \
-  proxy    /service      localhost:8080/api/v2 \
-  command  /wordcount    'wc -w'               \
-  command  /drop/{table} ./dropit              \
-  resource /documents    documents.json 
+  static  /          index.html \
+  command /wordcount 'wc -w'
 ```
-will produce the following output:
-<div align="center">
-  <img src="images/startup.png">
-</div>
+let's make some requests as well:
+```bash
+curl -X GET  localhost:1337/
+curl -X GET  localhost:1337/404
+curl -X POST localhost:1337/wordcount -d 'hello shiba'
+```
 
 <!-- - `σ` (sigma): static file
 - `Σ` (uppercase sigma): static directory
@@ -74,25 +76,10 @@ will produce the following output:
 - `λ` (lambda): command
 - `δ` (delta): resource -->
 
-making a few requests to the generated endpoints
 
-```bash
-http GET    :1337/media/logo.png
-http GET    :1337/media/shiba.png
-http GET    :1337/service/say-hello
-http GET    :1337/drop/users
-http POST   :1337/documents title="new document" pages:=256
-http DELETE :1337/documents/2
-```
-
-will generate these logs:
-
-<div align="center">
-  <img src="images/logs.png">
+<div align="center" href="https://asciinema.org/a/">
+  <img src="images/run.gif" alt="shiba demo" width="1337">
 </div>
-
-see `shiba --help` for more information
-
 
 ## Installation & Prerequisites [WIP]
 
@@ -112,25 +99,17 @@ make
 ```
 
 Depending on your system, there might be some missing command line utilities required by shiba, please check that the following are installed before running:
-- [netcat](http://netcat.sourceforge.net) - listening for incoming connections
-<!-- - [socat](http://www.dest-unreach.org/socat) -->
-- [jq](https://stedolan.github.io/jq) - for processing JSON
+- [socat](http://www.dest-unreach.org/socat) - listening for incoming connections and communicating with clients
+- [jq](https://stedolan.github.io/jq) - for parsing and validating JSON
 - [sqlite3](https://github.com/sqlite/sqlite) - for data storage
 
 ## Todos [WIP]
 
 - Disallow null keys when using custom key field
+- Make logging thread safe (kind of)
 - Token authentication
 - Update --help
-- Sqlite backend
 - Entity relations (maybe)
-- Allow spaces in resource field names
-- Configuration console
-  - serve file: file listing with `fzf`
-  - serve directory: directory listing with `fzf`
-  - executable: file listing with `fzf`
-  - script: text editor
-  - rest resource: ?
 - TLS support
   - `https://airman604.medium.com/simple-tls-listener-4e1cca7856b8`
   - `socat TCP4-LISTEN:8080,fork EXEC:/usr/local/bin/shiba`
