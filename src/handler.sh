@@ -42,6 +42,9 @@ export -f quit
 
 
 handle_client() {
+    REQUEST_ID="${BASHPID}"
+    export REQUEST_ID
+    
     set -o nounset
     # set -o xtrace
     set -o pipefail
@@ -55,8 +58,17 @@ handle_client() {
     # >&2 echo "end:"
     # >&2 echo "$((end_ts - start_ts))"
     # # /////////////////////
-    
 
+
+    
+    IFS=$'\n' read -d '' -ra STATIC_FILES <<< "$SHIBA_STATIC_FILES"
+    IFS=$'\n' read -d '' -ra STATIC_DIRECTORIES <<< "$SHIBA_STATIC_DIRECTORIES"
+    IFS=$'\n' read -d '' -ra COMMANDS <<< "$SHIBA_COMMANDS"
+    IFS=$'\n' read -d '' -ra PROXIES <<< "$SHIBA_PROXIES"
+    IFS=$'\n' read -d '' -ra RESOURCES <<< "$SHIBA_RESOURCES"
+
+
+    # TODO: replace recv subshell
     read -r REQUEST_METHOD REQUEST_URI REQUEST_HTTP_VERSION <<< "$(recv)"
     if [[ -z $REQUEST_METHOD ]]; then
         send_response_bad_request "no request method in http request header"
@@ -102,8 +114,7 @@ handle_client() {
         "Access-Control-Allow-Headers: *"
     )
 
-    while read -r entry; do
-        [[ -z $entry ]] && continue
+    for entry in "${STATIC_FILES[@]}"; do
         IFS='|' read -r endpoint target <<< "${entry}"
 
         regex="^${endpoint}$"
@@ -118,10 +129,9 @@ handle_client() {
             handle_static_file "$target"
             quit
         fi
-    done <<< "${SHIBA_STATIC_FILES}"
+    done
 
-    while read -r entry; do
-        [[ -z $entry ]] && continue
+    for entry in "${STATIC_DIRECTORIES[@]}"; do
         IFS='|' read -r endpoint directory <<< "${entry}"
 
         regex="^${endpoint}(.+)$"
@@ -138,10 +148,9 @@ handle_client() {
             handle_static_file "$file"
             quit
         fi
-    done <<< "${SHIBA_STATIC_DIRECTORIES}"
+    done
 
-    while read -r entry; do
-        [[ -z $entry ]] && continue
+    for entry in "${COMMANDS[@]}"; do
         IFS='|' read -r endpoint command <<< "${entry}"
 
         regex="^$(sed 's|{[^}]*}|([^/]+)|g' <<< "$endpoint")$"
@@ -152,22 +161,24 @@ handle_client() {
             handle_command "${command}" "${BASH_REMATCH[@]:1}"
             quit
         fi
-    done <<< "${SHIBA_COMMANDS}"
+    done
 
-    # for entry in "${PROXIES[@]}"; do
-    #     parse_object endpoint server <<< "$entry"
+    for entry in "${PROXIES}"; do
+        IFS='|' read -r endpoint server <<< "${entry}"
 
-    #     # TODO: something about the trailing slashes
-    #     regex="^$endpoint(/.*)?$"
+        # TODO: something about the trailing slashes
+        regex="^$endpoint(/.*)?$"
 
-    #     # TODO: handle other methods
-    #     if [[ $REQUEST_METHOD == "GET" ]] && [[ $REQUEST_URI =~ $regex ]]; then
-    #         log_regex_match "$regex"
-    #         log_endpoint_match "$endpoint"
-    #         url="$server${BASH_REMATCH[1]:-/}"
-    #         handle_proxy
-    #     fi
-    # done
+        # TODO: handle other methods
+        if [[ $REQUEST_URI =~ $regex ]]; then
+            log "REGEX_MATCH" "$regex"
+            log "ENDPOINT_MATCH" "$endpoint"
+
+            url="$server${BASH_REMATCH[1]:-/}"
+            handle_proxy "${url}"
+            quit
+        fi
+    done
 
     # for entry in "${RESOURCES[@]}"; do
     #     parse_object endpoint resource <<< "$entry"

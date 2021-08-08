@@ -41,6 +41,7 @@ printlog() {
 
             # RESPONSE STATUS
             RESPONSE_CODE)
+                # >&2 echo "RESPONSE CODE: ${value}"
                 [[ $SHIBA_LOG_RESPONSE_CODE = true ]] || continue
                 >&2 printf "  ${CYAN}%s${CLEAR}\n" "response"
                 if [[ ${value::1} = 2 ]]; then
@@ -68,6 +69,7 @@ printlog() {
                 ;;
 
             HANDLER_COMMAND_SUCCESS)
+                [[ $SHIBA_LOG_HANDLER_STATUS = true ]] || continue
                 read -ra parts <<< "${value}"
                 >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
                 # TODO: colors
@@ -75,10 +77,19 @@ printlog() {
                 ;;
 
             HANDLER_COMMAND_ERROR)
+                [[ $SHIBA_LOG_HANDLER_STATUS = true ]] || continue
                 read -ra parts <<< "${value}"
                 >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
                 # TODO: colors
-                >&2 printf "    ${RED}%s${CLEAR} %s with exit code %d\n" "failed" "${parts[@]:1}" "${parts[0]}"
+                >&2 printf "    ${RED}%s${CLEAR} %s with exit code %d\n" "failed" "${parts[*]:1}" "${parts[0]}"
+                ;;
+
+            HANDLER_PROXY_SUCCESS)
+                [[ $SHIBA_LOG_HANDLER_STATUS = true ]] || continue
+                read -ra parts <<< "${value}"
+                >&2 printf "  ${CYAN}%s${CLEAR}\n" "stauts"
+                # TODO: colors
+                >&2 printf "    ${GREEN}%s${CLEAR} responded with %d bytes of %s\n" "remote" "${parts[0]}" "${parts[1]}"
                 ;;
             
             # SHIBA_LOG_SQL_QUERY
@@ -94,12 +105,12 @@ printlog() {
                 # >&2 echo "$event not handled"
                 ;;
         esac
-    done < "/tmp/shibalog$BASHPID"
-    rm "/tmp/shibalog$BASHPID"
+    done < "/tmp/shibalog$REQUEST_ID"
+    rm "/tmp/shibalog$REQUEST_ID"
 }
 export -f printlog
 
 log() {
-    echo "$*" >> "/tmp/shibalog$BASHPID"
+    echo "$*" >> "/tmp/shibalog$REQUEST_ID"
 }
 export -f log
